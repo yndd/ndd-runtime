@@ -2,7 +2,7 @@
 # Setup Project
 
 PROJECT_NAME := ndd-runtime
-PROJECT_REPO := github.com/netw-device-driver/$(PROJECT_NAME)
+PROJECT_REPO := github.com/yndd/$(PROJECT_NAME)
 
 all: 
 

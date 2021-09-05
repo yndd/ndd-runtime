@@ -27,8 +27,8 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/netw-device-driver/ndd-runtime/pkg/meta"
-	"github.com/netw-device-driver/ndd-runtime/pkg/utils"
+	"github.com/yndd/ndd-runtime/pkg/meta"
+	"github.com/yndd/ndd-runtime/pkg/utils"
 )
 
 // Error strings.

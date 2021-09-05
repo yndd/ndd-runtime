@@ -22,7 +22,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 
-	nddv1 "github.com/netw-device-driver/ndd-runtime/apis/common/v1"
+	nddv1 "github.com/yndd/ndd-runtime/apis/common/v1"
 	"github.com/pkg/errors"
 )
 

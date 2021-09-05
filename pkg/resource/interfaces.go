@@ -23,7 +23,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	nddv1 "github.com/netw-device-driver/ndd-runtime/apis/common/v1"
+	nddv1 "github.com/yndd/ndd-runtime/apis/common/v1"
 )
 
 // A Conditioned may have conditions set or retrieved. Conditions are typically

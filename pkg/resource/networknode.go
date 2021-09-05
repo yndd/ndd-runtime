@@ -19,8 +19,8 @@ package resource
 import (
 	"context"
 
-	nddv1 "github.com/netw-device-driver/ndd-runtime/apis/common/v1"
-	"github.com/netw-device-driver/ndd-runtime/pkg/meta"
+	nddv1 "github.com/yndd/ndd-runtime/apis/common/v1"
+	"github.com/yndd/ndd-runtime/pkg/meta"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"

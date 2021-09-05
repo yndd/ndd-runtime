@@ -705,6 +705,7 @@ github.com/ncw/swift v1.0.47/go.mod h1:23YIA4yWVnGwv2dQlN4bB7egfYX6YLn0Yo/S6zZO/
 github.com/netw-device-driver/ndd-grpc v0.1.28/go.mod h1:HfnC81owTl7n476RrrbK2YzFjg7dtnvMjfVZ+ZGx09w=
 github.com/netw-device-driver/ndd-grpc v0.1.32 h1:Xn3PoCnqhZiGYnund88g+qdKzCtjL5YKrlS81yNIw0o=
 github.com/netw-device-driver/ndd-grpc v0.1.32/go.mod h1:JANvl+sv2h/e0IMq3tLX72HVLrpxYtBgFbd35wbyTOc=
+github.com/netw-device-driver/ndd-runtime v0.4.78 h1:t8vRO0+tB4GAAeJOH4fOUTfNvmn0lWSdZuKSpe+y+eI=
 github.com/netw-device-driver/ndd-runtime v0.4.78/go.mod h1:pe+ucJSwzefLFHRTCeHkIMrNf6F3OxSddBpfA1TT6Rs=
 github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e h1:fD57ERR4JtEqsWbfPhv4DMiApHyliiK5xCTNVSPiaAs=
 github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e/go.mod h1:zD1mROLANZcx1PVRCS0qkT7pwLkGfwJo4zjcN/Tysno=

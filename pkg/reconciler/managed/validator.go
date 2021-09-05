@@ -19,7 +19,7 @@ package managed
 import (
 	"context"
 
-	"github.com/netw-device-driver/ndd-runtime/pkg/resource"
+	"github.com/yndd/ndd-runtime/pkg/resource"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/yndd/ndd-yang/pkg/parser"
 )
