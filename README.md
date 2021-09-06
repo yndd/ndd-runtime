@@ -2,7 +2,7 @@
 
 [![github release](https://img.shields.io/github/release/yndd/ndd-runtime.svg?style=flat-square&color=00c9ff&labelColor=bec8d2)](https://github.com/yndd/ndd-runtime/releases/)
 [![Go Report](https://img.shields.io/badge/go%20report-A%2B-blue?style=flat-square&color=00c9ff&labelColor=bec8d2)](https://goreportcard.com/report/github.com/yndd/ndd-runtime)
-[![Doc](https://img.shields.io/badge/ndddocs.yndd.io-blue?style=flat-square&color=00c9ff&labelColor=bec8d2)](https://ndddocs.yndd.io)
+[![Doc](https://img.shields.io/badge/Docs-ndddocs.yndd.io-blue?style=flat-square&color=00c9ff&labelColor=bec8d2)](https://ndddocs.yndd.io)
 [![Godoc](https://img.shields.io/badge/godoc-reference-blue.svg)](https://godoc.org/github.com/yndd/ndd-runtime)
 
 
