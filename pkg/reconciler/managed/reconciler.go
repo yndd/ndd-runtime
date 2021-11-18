@@ -22,16 +22,17 @@ import (
 	"strings"
 	"time"
 
-	nddv1 "github.com/yndd/ndd-runtime/apis/common/v1"
 	"github.com/openconfig/gnmi/proto/gnmi"
+	nddv1 "github.com/yndd/ndd-runtime/apis/common/v1"
 	"github.com/yndd/ndd-yang/pkg/parser"
+	"github.com/yndd/ndd-yang/pkg/yparser"
 
+	"github.com/pkg/errors"
 	"github.com/yndd/ndd-runtime/pkg/event"
 	"github.com/yndd/ndd-runtime/pkg/gvk"
 	"github.com/yndd/ndd-runtime/pkg/logging"
 	"github.com/yndd/ndd-runtime/pkg/meta"
 	"github.com/yndd/ndd-runtime/pkg/resource"
-	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
@@ -567,40 +568,6 @@ func (r *Reconciler) Reconcile(_ context.Context, req reconcile.Request) (reconc
 				managed.SetConditions(nddv1.ReconcileError(err), nddv1.Unknown())
 				return reconcile.Result{Requeue: true}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
 			}
-			/*
-				gvkObject, err := gvk.String2GVK(externalResourceName)
-				if err != nil {
-					log.Debug("Cannot get gvk", "error", err, "externalResourceName", gvkObject)
-					managed.SetConditions(nddv1.ReconcileError(err), nddv1.Unknown())
-					return reconcile.Result{Requeue: true}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
-				}
-				//split := strings.Split(externalResourceName, ".")
-				//emr, err := r.resolver.GetManagedResource(ctx, split[len(split)-2])
-				log.Debug("gvkObject", "gvkObject", gvkObject)
-				log.Debug("GVK info", "Kind", gvkObject.GetKind(), "Name", gvkObject.GetName(), "Namespace", gvkObject.GetNameSpace())
-				emr, err := r.resolver.GetManagedResource(ctx, gvkObject.GetKind())
-				if err != nil {
-					log.Debug("Cannot get external leafref external resource", "error", err, "externalResourceName", gvkObject)
-					managed.SetConditions(nddv1.ReconcileError(err), nddv1.Unknown())
-					return reconcile.Result{Requeue: true}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
-				}
-
-				key := types.NamespacedName{
-					Namespace: managed.GetNamespace(),
-					Name:      gvkObject.GetName(),
-					//Name:      split[len(split)-1],
-				}
-				if err := r.client.Get(ctx, key, emr); err != nil {
-					log.Debug("Cannot get external resource", "error", err, "external resource", externalResourceName)
-					managed.SetConditions(nddv1.ReconcileError(err), nddv1.Unknown())
-					return reconcile.Result{Requeue: true}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
-				}
-				if err := r.managed.RemoveFinalizerString(ctx, emr, managed.GetObjectKind().GroupVersionKind().Kind+"."+managed.GetName()); err != nil {
-					log.Debug("Cannot remove finalizer to external resource", "error", err, "external resource", externalResourceName)
-					managed.SetConditions(nddv1.ReconcileError(err), nddv1.Unknown())
-					return reconcile.Result{Requeue: true}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
-				}
-			*/
 		}
 
 		if err := r.managed.RemoveFinalizer(ctx, managed); err != nil {
@@ -741,7 +708,7 @@ func (r *Reconciler) Reconcile(_ context.Context, req reconcile.Request) (reconc
 
 		// for some special cases it might be that the remotePaths or multiple iso 1.
 		// E.g. interface/subinterface or tunnel/vxlan-interface would be split in 2 paths
-		remotePaths := r.parser.GetRemoteGnmiPathsFromResolvedLeafRef(resolvedLeafRef)
+		remotePaths := yparser.GetRemotePathsFromResolvedLeafRef(resolvedLeafRef)
 
 		for _, remotePath := range remotePaths {
 			// get the resourceName from the device driver that matches the remotePath in the resolved LeafaRef

@@ -19,9 +19,9 @@ package managed
 import (
 	"context"
 
-	"github.com/yndd/ndd-runtime/pkg/resource"
 	"github.com/openconfig/gnmi/proto/gnmi"
-	"github.com/yndd/ndd-yang/pkg/parser"
+	"github.com/yndd/ndd-runtime/pkg/resource"
+	"github.com/yndd/ndd-yang/pkg/leafref"
 )
 
 type Validator interface {
@@ -78,19 +78,19 @@ func (e *NopValidator) ValidateResourceIndexes(ctx context.Context, mg resource.
 type ValidateLocalleafRefObservation struct {
 	Success bool
 
-	ResolvedLeafRefs []*parser.ResolvedLeafRefGnmi
+	ResolvedLeafRefs []*leafref.ResolvedLeafRef
 }
 
 type ValidateExternalleafRefObservation struct {
 	Success bool
 
-	ResolvedLeafRefs []*parser.ResolvedLeafRefGnmi
+	ResolvedLeafRefs []*leafref.ResolvedLeafRef
 }
 
 type ValidateParentDependencyObservation struct {
 	Success bool
 
-	ResolvedLeafRefs []*parser.ResolvedLeafRefGnmi
+	ResolvedLeafRefs []*leafref.ResolvedLeafRef
 }
 
 type ValidateResourceIndexesObservation struct {
