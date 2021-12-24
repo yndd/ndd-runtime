@@ -52,9 +52,9 @@ func NewAPIPatchingApplicator(c client.Client) *APIPatchingApplicator {
 // not exist, or patched if it does. If the object does exist, it will only be
 // patched if the passed object has the same or an empty resource version.
 func (a *APIPatchingApplicator) Apply(ctx context.Context, o client.Object, ao ...ApplyOption) error {
-	if o.GetNamespace() == "" {
-		o.SetNamespace("default")
-	}
+	//if o.GetNamespace() == "" {
+	//	o.SetNamespace("default")
+	//}
 
 	m, ok := o.(metav1.Object)
 	if !ok {
