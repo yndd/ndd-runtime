@@ -75,7 +75,6 @@ func (a *APIPatchingApplicator) Apply(ctx context.Context, o client.Object, ao .
 	if err != nil {
 		return errors.Wrap(err, "cannot get object")
 	}
-	fmt.Printf("apply options: %v\n", ao)
 
 	for _, fn := range ao {
 		if err := fn(ctx, o, desired); err != nil {
