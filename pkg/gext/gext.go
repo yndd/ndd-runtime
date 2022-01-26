@@ -25,6 +25,13 @@ import (
 )
 
 const (
+	ErrorNotReady   = 0
+	ErrorNotExists  = 1
+	ErrorNotSuccess = 2
+	// HasData is shown by using []notification information
+)
+
+const (
 	errJSONMarshal   = "cannot marshal JSON object"
 	errJSONUnMarshal = "cannot unmarshal JSON object"
 )
