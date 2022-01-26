@@ -25,9 +25,9 @@ import (
 )
 
 const (
-	ErrorNotReady   = 0
-	ErrorNotExists  = 1
-	ErrorNotSuccess = 2
+	ErrorNotReady   = "not ready"
+	ErrorNotExists  = "does not exist"
+	ErrorNotSuccess = "status"
 	// HasData is shown by using []notification information
 )
 
