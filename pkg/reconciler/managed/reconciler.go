@@ -594,7 +594,7 @@ func (r *Reconciler) Reconcile(_ context.Context, req reconcile.Request) (reconc
 	}
 
 	// get the full configuration of the network node in order to do leafref and parent validation
-	cfg, err := external.GetConfig(externalCtx)
+	cfg, err := external.GetConfig(externalCtx, managed)
 	if err != nil {
 		log.Debug("Cannot get network node configuration", "error", err)
 		record.Event(managed, event.Warning(reasonCannotGetConfig, err))

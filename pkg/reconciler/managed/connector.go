@@ -75,7 +75,7 @@ type ExternalClient interface {
 	GetTarget() []string
 
 	// GetConfig returns the full configuration of the network node
-	GetConfig(ctx context.Context) ([]byte, error)
+	GetConfig(ctx context.Context, mg resource.Managed) ([]byte, error)
 
 	// GetResourceName returns the resource that matches the path
 	GetResourceName(ctx context.Context, path []*gnmi.Path) (string, error)
@@ -165,7 +165,7 @@ func (c *NopClient) Delete(ctx context.Context, mg resource.Managed) error { ret
 func (c *NopClient) GetTarget() []string { return make([]string, 0) }
 
 // GetConfig returns the full configuration of the network node
-func (c *NopClient) GetConfig(ctx context.Context) ([]byte, error) {
+func (c *NopClient) GetConfig(ctx context.Context, mg resource.Managed) ([]byte, error) {
 	return make([]byte, 0), nil
 }
 
