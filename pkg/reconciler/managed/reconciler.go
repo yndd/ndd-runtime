@@ -29,10 +29,10 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/yndd/ndd-runtime/pkg/event"
-	"github.com/yndd/ndd-runtime/pkg/gvk"
 	"github.com/yndd/ndd-runtime/pkg/logging"
 	"github.com/yndd/ndd-runtime/pkg/meta"
 	"github.com/yndd/ndd-runtime/pkg/resource"
+	"github.com/yndd/nddp-system/pkg/gvkresource"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
@@ -1011,7 +1011,7 @@ const (
 )
 
 func (r *Reconciler) HandleExternalResourceFinalizer(ctx context.Context, operation FinalizerOperation, externalResourceName string, managed resource.Managed) error {
-	gvk, err := gvk.String2GVK(externalResourceName)
+	gvk, err := gvkresource.String2Gvk(externalResourceName)
 	if err != nil {
 		r.log.Debug("Cannot get gvk", "error", err, "externalResourceName", externalResourceName, "gvk", gvk)
 		return errors.Wrap(err, fmt.Sprintf("Cannot get gvk with externalResourceName %s, gvk: %v", externalResourceName, gvk))
@@ -1019,15 +1019,14 @@ func (r *Reconciler) HandleExternalResourceFinalizer(ctx context.Context, operat
 
 	emr := &unstructured.Unstructured{}
 	emr.SetGroupVersionKind(schema.GroupVersionKind{
-		Group:   gvk.GetGroup(),
-		Kind:    gvk.GetKind(),
-		Version: gvk.GetVersion(),
+		Group:   gvk.Group,
+		Kind:    gvk.Kind,
+		Version: gvk.Version,
 	})
 
 	key := types.NamespacedName{
-		Namespace: managed.GetNamespace(),
-		Name:      gvk.GetName(),
-		//Name:      split[len(split)-1],
+		Namespace: gvk.NameSpace,
+		Name:      gvk.Name,
 	}
 	if err := r.client.Get(ctx, key, emr); err != nil {
 		r.log.Debug("Cannot get external resource", "error", err, "externalResourceName", externalResourceName, "gvk", gvk)
