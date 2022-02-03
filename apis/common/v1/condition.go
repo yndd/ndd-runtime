@@ -29,9 +29,11 @@ type ConditionKind string
 // Condition Kinds.
 const (
 	// handled per resource
-	ConditionKindInternalLeafRef ConditionKind = "InternalLeafrefValidationSuccess"
+	ConditionKindLeafRef ConditionKind = "LeafrefValidationSuccess"
+	// handled per resource
+	//ConditionKindInternalLeafRef ConditionKind = "InternalLeafrefValidationSuccess"
 	// handled per target per resource
-	ConditionKindExternalLeafRef ConditionKind = "ExternalLeafrefValidationSuccess"
+	//ConditionKindExternalLeafRef ConditionKind = "ExternalLeafrefValidationSuccess"
 	// handled per resource
 	ConditionKindParent ConditionKind = "ParentValidationSuccess"
 	// handled per resource
@@ -302,6 +304,40 @@ func TargetNotFound() Condition {
 	}
 }
 
+// LeafRefValidationSuccess returns a condition that indicates
+// the resource leafreference(s) are found or no leafrefs exist
+func LeafRefValidationSuccess() Condition {
+	return Condition{
+		Kind:               ConditionKindLeafRef,
+		Status:             corev1.ConditionTrue,
+		LastTransitionTime: metav1.Now(),
+		Reason:             ConditionReasonSuccess,
+	}
+}
+
+// LeafRefValidationFailure returns a condition that indicates
+// the resource leafreference(s) are missing
+func LeafRefValidationFailure() Condition {
+	return Condition{
+		Kind:               ConditionKindLeafRef,
+		Status:             corev1.ConditionFalse,
+		LastTransitionTime: metav1.Now(),
+		Reason:             ConditionReasonFailed,
+	}
+}
+
+// LeafRefValidationUnknown returns a condition that indicates
+// the internal leafref validation is unknown
+func LeafRefValidationUnknown() Condition {
+	return Condition{
+		Kind:               ConditionKindLeafRef,
+		Status:             corev1.ConditionFalse,
+		LastTransitionTime: metav1.Now(),
+		Reason:             ConditionReasonUnknown,
+	}
+}
+
+/*
 // LocalLeafRefValidationSuccess returns a condition that indicates
 // the resource leafreference(s) are found or no leafrefs exist
 func LocalLeafRefValidationSuccess() Condition {
@@ -367,6 +403,7 @@ func ExternalLeafRefValidationUnknown() Condition {
 		Reason:             ConditionReasonUnknown,
 	}
 }
+*/
 
 // ParentValidationFailure returns a condition that indicates
 // the resource parent is found

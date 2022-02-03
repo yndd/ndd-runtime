@@ -54,40 +54,43 @@ const (
 	defaultpollInterval = 1 * time.Minute
 
 	// errors
-	errGetManaged                        = "cannot get managed resource"
-	errUpdateManagedAfterCreate          = "cannot update managed resource. this may have resulted in a leaked external resource"
-	errReconcileConnect                  = "connect failed"
-	errReconcileObserve                  = "observe failed"
-	errReconcileCreate                   = "create failed"
-	errReconcileUpdate                   = "update failed"
-	errReconcileDelete                   = "delete failed"
-	errReconcileGetConfig                = "get config failed"
-	errReconcileGetResourceName          = "get resource name failed"
-	errReconcileValidateLocalLeafRef     = "validation local leafref failed"
-	errReconcileValidateExternalLeafRef  = "validation externaal leafref failed"
-	errReconcileValidateParentDependency = "validation parent dependency failed"
-	errReconcileValidateResourceIndexes  = "Validation resource indexes failed"
+	errGetManaged               = "cannot get managed resource"
+	errUpdateManagedAfterCreate = "cannot update managed resource. this may have resulted in a leaked external resource"
+	errReconcileConnect         = "connect failed"
+	errReconcileObserve         = "observe failed"
+	errReconcileCreate          = "create failed"
+	errReconcileUpdate          = "update failed"
+	errReconcileDelete          = "delete failed"
+	errReconcileGetConfig       = "get config failed"
+	errReconcileGetResourceName = "get resource name failed"
+	//errReconcileValidateLocalLeafRef     = "validation local leafref failed"
+	//errReconcileValidateExternalLeafRef  = "validation externaal leafref failed"
+	errReconcileValidateLeafRef          = "leafref validation failed"
+	errReconcileValidateParentDependency = "parent dependency validation failed"
+	errReconcileValidateResourceIndexes  = "resource indexes validation failed"
 	errUpdateManagedStatus               = "cannot update status of the managed resource"
 
 	// Event reasons.
-	reasonCannotConnect                  event.Reason = "CannotConnectToProvider"
-	reasonCannotInitialize               event.Reason = "CannotInitializeManagedResource"
-	reasonCannotResolveRefs              event.Reason = "CannotResolveResourceReferences"
-	reasonCannotObserve                  event.Reason = "CannotObserveExternalResource"
-	reasonCannotCreate                   event.Reason = "CannotCreateExternalResource"
-	reasonCannotDelete                   event.Reason = "CannotDeleteExternalResource"
-	reasonCannotPublish                  event.Reason = "CannotPublishConnectionDetails"
-	reasonCannotUnpublish                event.Reason = "CannotUnpublishConnectionDetails"
-	reasonCannotUpdate                   event.Reason = "CannotUpdateExternalResource"
-	reasonCannotUpdateManaged            event.Reason = "CannotUpdateManagedResource"
-	reasonCannotGetConfig                event.Reason = "CannotGetConfigExternalResource"
-	reasonCannotGetResourceName          event.Reason = "CannotGetresourceNameExternalResource"
-	reasonCannotValidateLocalLeafRef     event.Reason = "CannotValidateLocalLeafRef"
-	reasonCannotValidateExternalLeafRef  event.Reason = "CannotValidateExternalLeafRef"
+	reasonCannotConnect         event.Reason = "CannotConnectToProvider"
+	reasonCannotInitialize      event.Reason = "CannotInitializeManagedResource"
+	reasonCannotResolveRefs     event.Reason = "CannotResolveResourceReferences"
+	reasonCannotObserve         event.Reason = "CannotObserveExternalResource"
+	reasonCannotCreate          event.Reason = "CannotCreateExternalResource"
+	reasonCannotDelete          event.Reason = "CannotDeleteExternalResource"
+	reasonCannotPublish         event.Reason = "CannotPublishConnectionDetails"
+	reasonCannotUnpublish       event.Reason = "CannotUnpublishConnectionDetails"
+	reasonCannotUpdate          event.Reason = "CannotUpdateExternalResource"
+	reasonCannotUpdateManaged   event.Reason = "CannotUpdateManagedResource"
+	reasonCannotGetConfig       event.Reason = "CannotGetConfigExternalResource"
+	reasonCannotGetResourceName event.Reason = "CannotGetresourceNameExternalResource"
+	//reasonCannotValidateLocalLeafRef     event.Reason = "CannotValidateLocalLeafRef"
+	//reasonCannotValidateExternalLeafRef  event.Reason = "CannotValidateExternalLeafRef"
+	reasonCannotValidateLeafRef          event.Reason = "CannotValidateLeafRef"
 	reasonCannotValidateParentDependency event.Reason = "CannotValidateParentDependency"
 	reasonCannotGetValidTarget           event.Reason = "CannotGetValidTarget"
-	reasonValidateLocalLeafRefFailed     event.Reason = "ValidateLocalLeafRefFailed"
-	reasonValidateExternalLeafRefFailed  event.Reason = "ValidateExternalLeafRefFailed"
+	//reasonValidateLocalLeafRefFailed     event.Reason = "ValidateLocalLeafRefFailed"
+	//reasonValidateExternalLeafRefFailed  event.Reason = "ValidateExternalLeafRefFailed"
+	reasonValidateLeafRefFailed          event.Reason = "ValidatelLeafRefFailed"
 	reasonValidateParentDependencyFailed event.Reason = "ValidateParentDependencyFailed"
 	reasonCannotValidateResourceIndexes  event.Reason = "CannotValidateResourceIndexes"
 
@@ -467,7 +470,7 @@ func (r *Reconciler) Reconcile(_ context.Context, req reconcile.Request) (reconc
 			return reconcile.Result{Requeue: false}, nil
 		}
 		// Set validation status to unknown if the target is not found
-		managed.SetConditions(nddv1.ParentValidationUnknown(), nddv1.LocalLeafRefValidationUnknown(), nddv1.ExternalLeafRefValidationUnknown())
+		managed.SetConditions(nddv1.ParentValidationUnknown(), nddv1.LeafRefValidationUnknown(), nddv1.LeafRefValidationUnknown())
 		// set empty target
 		managed.SetTarget(make([]string, 0))
 		// if the target was not found it means the network node is not defined or not in a status
@@ -602,38 +605,40 @@ func (r *Reconciler) Reconcile(_ context.Context, req reconcile.Request) (reconc
 		return reconcile.Result{Requeue: true}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
 	}
 
-	localLeafrefObservation, err := r.validator.ValidateLocalleafRef(ctx, managed)
-	if err != nil {
-		if observation.ResourceExists {
-			if err := external.Delete(externalCtx, managed); err != nil {
-				// We'll hit this condition if we can't delete our external resource
-				log.Debug("Cannot delete external resource", "error", err)
-				record.Event(managed, event.Warning(reasonCannotDelete, err))
-				managed.SetConditions(nddv1.ReconcileError(errors.Wrap(err, errReconcileDelete)), nddv1.Unknown())
-				return reconcile.Result{Requeue: true}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
+	/*
+		localLeafrefObservation, err := r.validator.ValidateLocalleafRef(ctx, managed)
+		if err != nil {
+			if observation.ResourceExists {
+				if err := external.Delete(externalCtx, managed); err != nil {
+					// We'll hit this condition if we can't delete our external resource
+					log.Debug("Cannot delete external resource", "error", err)
+					record.Event(managed, event.Warning(reasonCannotDelete, err))
+					managed.SetConditions(nddv1.ReconcileError(errors.Wrap(err, errReconcileDelete)), nddv1.Unknown())
+					return reconcile.Result{Requeue: true}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
+				}
 			}
+			log.Debug("Cannot validate local leafref", "error", err)
+			record.Event(managed, event.Warning(reasonCannotValidateLocalLeafRef, err))
+			managed.SetConditions(nddv1.ReconcileError(errors.Wrap(err, errReconcileValidateLocalLeafRef)), nddv1.Unknown())
+			return reconcile.Result{Requeue: true}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
 		}
-		log.Debug("Cannot validate local leafref", "error", err)
-		record.Event(managed, event.Warning(reasonCannotValidateLocalLeafRef, err))
-		managed.SetConditions(nddv1.ReconcileError(errors.Wrap(err, errReconcileValidateLocalLeafRef)), nddv1.Unknown())
-		return reconcile.Result{Requeue: true}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
-	}
-	if !localLeafrefObservation.Success {
-		if observation.ResourceExists {
-			if err := external.Delete(externalCtx, managed); err != nil {
-				// We'll hit this condition if we can't delete our external resource
-				log.Debug("Cannot delete external resource", "error", err)
-				record.Event(managed, event.Warning(reasonCannotDelete, err))
-				managed.SetConditions(nddv1.ReconcileError(errors.Wrap(err, errReconcileDelete)), nddv1.Unknown())
-				return reconcile.Result{Requeue: true}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
+		if !localLeafrefObservation.Success {
+			if observation.ResourceExists {
+				if err := external.Delete(externalCtx, managed); err != nil {
+					// We'll hit this condition if we can't delete our external resource
+					log.Debug("Cannot delete external resource", "error", err)
+					record.Event(managed, event.Warning(reasonCannotDelete, err))
+					managed.SetConditions(nddv1.ReconcileError(errors.Wrap(err, errReconcileDelete)), nddv1.Unknown())
+					return reconcile.Result{Requeue: true}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
+				}
 			}
+			log.Debug("local leafref validation failed", "error", errors.New("validation failed"))
+			record.Event(managed, event.Warning(reasonValidateLocalLeafRefFailed, errors.New("validation failed")))
+			managed.SetConditions(nddv1.LocalLeafRefValidationFailure(), nddv1.Unavailable(), nddv1.ReconcileSuccess())
+			return reconcile.Result{RequeueAfter: shortWait}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
 		}
-		log.Debug("local leafref validation failed", "error", errors.New("validation failed"))
-		record.Event(managed, event.Warning(reasonValidateLocalLeafRefFailed, errors.New("validation failed")))
-		managed.SetConditions(nddv1.LocalLeafRefValidationFailure(), nddv1.Unavailable(), nddv1.ReconcileSuccess())
-		return reconcile.Result{RequeueAfter: shortWait}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
-	}
-	managed.SetConditions(nddv1.LocalLeafRefValidationSuccess())
+		managed.SetConditions(nddv1.LocalLeafRefValidationSuccess())
+	*/
 
 	parentDependencyObservation, err := r.validator.ValidateParentDependency(ctx, managed, cfg)
 	if err != nil {
@@ -668,8 +673,10 @@ func (r *Reconciler) Reconcile(_ context.Context, req reconcile.Request) (reconc
 	}
 	managed.SetConditions(nddv1.ParentValidationSuccess())
 
-	externalLeafrefObservation, err := r.validator.ValidateExternalleafRef(ctx, managed, cfg)
+	leafrefObservation, err := r.validator.ValidateLeafRef(ctx, managed, cfg)
 	if err != nil {
+		// TBD it can be that a change results in a deletion but the resource itself is depending on another leafref
+		// so this will fail
 		if observation.ResourceExists {
 			if err := external.Delete(externalCtx, managed); err != nil {
 				// We'll hit this condition if we can't delete our external resource
@@ -680,11 +687,11 @@ func (r *Reconciler) Reconcile(_ context.Context, req reconcile.Request) (reconc
 			}
 		}
 		log.Debug("Cannot validate external leafref", "error", err)
-		record.Event(managed, event.Warning(reasonCannotValidateExternalLeafRef, err))
-		managed.SetConditions(nddv1.ReconcileError(errors.Wrap(err, errReconcileValidateExternalLeafRef)), nddv1.Unknown())
+		record.Event(managed, event.Warning(reasonCannotValidateLeafRef, err))
+		managed.SetConditions(nddv1.ReconcileError(errors.Wrap(err, errReconcileValidateLeafRef)), nddv1.Unknown())
 		return reconcile.Result{Requeue: true}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
 	}
-	if !externalLeafrefObservation.Success {
+	if !leafrefObservation.Success {
 		if observation.ResourceExists {
 			if err := external.Delete(externalCtx, managed); err != nil {
 				// We'll hit this condition if we can't delete our external resource
@@ -695,15 +702,15 @@ func (r *Reconciler) Reconcile(_ context.Context, req reconcile.Request) (reconc
 			}
 		}
 		log.Debug("external leafref validation failed", "error", errors.New("validation failed"))
-		record.Event(managed, event.Warning(reasonValidateExternalLeafRefFailed, errors.New("validation failed")))
-		managed.SetConditions(nddv1.ExternalLeafRefValidationFailure(), nddv1.Unavailable(), nddv1.ReconcileSuccess())
+		record.Event(managed, event.Warning(reasonValidateLeafRefFailed, errors.New("validation failed")))
+		managed.SetConditions(nddv1.LeafRefValidationFailure(), nddv1.Unavailable(), nddv1.ReconcileSuccess())
 		return reconcile.Result{RequeueAfter: veryShortWait}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
 	}
 
 	//log.Debug("External Leafref Validation", "resolved leafref", externalLeafrefObservation.ResolvedLeafRefs)
 	// get the external resources that match the external leafRefs
 	externalResourceNames := make([]string, 0)
-	for _, resolvedLeafRef := range externalLeafrefObservation.ResolvedLeafRefs {
+	for _, resolvedLeafRef := range leafrefObservation.ResolvedLeafRefs {
 		log.WithValues("resolvedLeafRef", resolvedLeafRef)
 
 		// for some special cases it might be that the remotePaths or multiple iso 1.
@@ -739,10 +746,9 @@ func (r *Reconciler) Reconcile(_ context.Context, req reconcile.Request) (reconc
 					"path", r.parser.GnmiPathToXPath(resolvedLeafRef.RemotePath, true))
 			}
 		}
-
 	}
 
-	log.Debug("External Leafref Validation", "externalResourceNames", externalResourceNames)
+	log.Debug("leafref Validation", "externalResourceNames", externalResourceNames)
 	for _, externalResourceName := range externalResourceNames {
 		// for all external resolved names we need to add a finalizer to the external resource
 		if err := r.HandleExternalResourceFinalizer(ctx, FinalizerOperationAdd, externalResourceName, managed); err != nil {
@@ -786,7 +792,7 @@ func (r *Reconciler) Reconcile(_ context.Context, req reconcile.Request) (reconc
 	}
 	log.Debug("External Leafref Validation", "externalResourceNames", externalResourceNames)
 
-	managed.SetConditions(nddv1.ExternalLeafRefValidationSuccess())
+	managed.SetConditions(nddv1.LeafRefValidationSuccess())
 	// we need to check the delta between the existing External LeafRefs and the new LeaRefs
 	// if there is a deletion we need remove the external finalizer of the object
 	externalResourceNamesDeletes := FindExternalResourceNameDelta(managed.GetExternalLeafRefs(), externalResourceNames)
