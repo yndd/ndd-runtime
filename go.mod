@@ -8,7 +8,7 @@ require (
 	github.com/openconfig/gnmi v0.0.0-20210707145734-c69a5df04b53
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/afero v1.6.0
-	github.com/yndd/ndd-yang v0.1.276
+	github.com/yndd/ndd-yang v0.1.515
 	golang.org/x/time v0.0.0-20210611083556-38a9dc6acbc6
 	k8s.io/api v0.21.3
 	k8s.io/apimachinery v0.21.3

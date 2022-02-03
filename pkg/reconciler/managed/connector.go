@@ -60,12 +60,12 @@ type ExternalClient interface {
 	// Create an external resource per the specifications of the supplied
 	// Managed resource. Called when Observe reports that the associated
 	// external resource does not exist.
-	Create(ctx context.Context, mg resource.Managed) (ExternalCreation, error)
+	Create(ctx context.Context, mg resource.Managed) error
 
 	// Update the external resource represented by the supplied Managed
 	// resource, if necessary. Called unless Observe reports that the
 	// associated external resource is up to date.
-	Update(ctx context.Context, mg resource.Managed, obs ExternalObservation) (ExternalUpdate, error)
+	Update(ctx context.Context, mg resource.Managed, obs ExternalObservation) error
 
 	// Delete the external resource upon deletion of its associated Managed
 	// resource. Called when the managed resource has been deleted.
@@ -78,19 +78,19 @@ type ExternalClient interface {
 	GetConfig(ctx context.Context, mg resource.Managed) ([]byte, error)
 
 	// GetResourceName returns the resource that matches the path
-	GetResourceName(ctx context.Context, path []*gnmi.Path) (string, error)
+	GetResourceName(ctx context.Context, mg resource.Managed, path *gnmi.Path) (string, error)
 }
 
 // ExternalClientFns are a series of functions that satisfy the ExternalClient
 // interface.
 type ExternalClientFns struct {
 	ObserveFn         func(ctx context.Context, mg resource.Managed) (ExternalObservation, error)
-	CreateFn          func(ctx context.Context, mg resource.Managed) (ExternalCreation, error)
-	UpdateFn          func(ctx context.Context, mg resource.Managed) (ExternalUpdate, error)
+	CreateFn          func(ctx context.Context, mg resource.Managed) error
+	UpdateFn          func(ctx context.Context, mg resource.Managed) error
 	DeleteFn          func(ctx context.Context, mg resource.Managed) error
 	GetTargetFn       func() []string
 	GetConfigFn       func(ctx context.Context) ([]byte, error)
-	GetResourceNameFn func(ctx context.Context, path []*gnmi.Path) (string, error)
+	GetResourceNameFn func(ctx context.Context, mg resource.Managed, path *gnmi.Path) (string, error)
 }
 
 // Observe the external resource the supplied Managed resource represents, if
@@ -101,13 +101,13 @@ func (e ExternalClientFns) Observe(ctx context.Context, mg resource.Managed) (Ex
 
 // Create an external resource per the specifications of the supplied Managed
 // resource.
-func (e ExternalClientFns) Create(ctx context.Context, mg resource.Managed) (ExternalCreation, error) {
+func (e ExternalClientFns) Create(ctx context.Context, mg resource.Managed) error {
 	return e.CreateFn(ctx, mg)
 }
 
 // Update the external resource represented by the supplied Managed resource, if
 // necessary.
-func (e ExternalClientFns) Update(ctx context.Context, mg resource.Managed) (ExternalUpdate, error) {
+func (e ExternalClientFns) Update(ctx context.Context, mg resource.Managed) error {
 	return e.UpdateFn(ctx, mg)
 }
 
@@ -128,8 +128,8 @@ func (e ExternalClientFns) GetConfig(ctx context.Context) ([]byte, error) {
 }
 
 // GetResourceName returns the resource matching the path
-func (e ExternalClientFns) GetResourceName(ctx context.Context, path []*gnmi.Path) (string, error) {
-	return e.GetResourceNameFn(ctx, path)
+func (e ExternalClientFns) GetResourceName(ctx context.Context, mg resource.Managed, path *gnmi.Path) (string, error) {
+	return e.GetResourceNameFn(ctx, mg, path)
 }
 
 // A NopConnecter does nothing.
@@ -149,13 +149,13 @@ func (c *NopClient) Observe(ctx context.Context, mg resource.Managed) (ExternalO
 }
 
 // Create does nothing. It returns an empty ExternalCreation and no error.
-func (c *NopClient) Create(ctx context.Context, mg resource.Managed) (ExternalCreation, error) {
-	return ExternalCreation{}, nil
+func (c *NopClient) Create(ctx context.Context, mg resource.Managed) error {
+	return nil
 }
 
 // Update does nothing. It returns an empty ExternalUpdate and no error.
-func (c *NopClient) Update(ctx context.Context, mg resource.Managed, obs ExternalObservation) (ExternalUpdate, error) {
-	return ExternalUpdate{}, nil
+func (c *NopClient) Update(ctx context.Context, mg resource.Managed, obs ExternalObservation) error {
+	return  nil
 }
 
 // Delete does nothing. It never returns an error.
@@ -170,7 +170,7 @@ func (c *NopClient) GetConfig(ctx context.Context, mg resource.Managed) ([]byte,
 }
 
 // GetResourceName returns the resource matching the path
-func (c *NopClient) GetResourceName(ctx context.Context, path []*gnmi.Path) (string, error) {
+func (c *NopClient) GetResourceName(ctx context.Context, mg resource.Managed, path *gnmi.Path) (string, error) {
 	return "", nil
 }
 
@@ -199,10 +199,13 @@ type ExternalObservation struct {
 }
 
 // An ExternalCreation is the result of the creation of an external resource.
-
+/*
 type ExternalCreation struct {
 }
+*/
 
 // An ExternalUpdate is the result of an update to an external resource.
+/*
 type ExternalUpdate struct {
 }
+*/

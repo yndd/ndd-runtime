@@ -692,6 +692,7 @@ func (r *Reconciler) Reconcile(_ context.Context, req reconcile.Request) (reconc
 		return reconcile.Result{Requeue: true}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
 	}
 	if !leafrefObservation.Success {
+		// tbd if we have to change this, it can be that we delete a resource that has other references
 		if observation.ResourceExists {
 			if err := external.Delete(externalCtx, managed); err != nil {
 				// We'll hit this condition if we can't delete our external resource
@@ -711,41 +712,45 @@ func (r *Reconciler) Reconcile(_ context.Context, req reconcile.Request) (reconc
 	// get the external resources that match the external leafRefs
 	externalResourceNames := make([]string, 0)
 	for _, resolvedLeafRef := range leafrefObservation.ResolvedLeafRefs {
-		log.WithValues("resolvedLeafRef", resolvedLeafRef)
+		// the external finalizer handling is only required for external leafrefs
+		if resolvedLeafRef.External {
+			log.WithValues("resolvedLeafRef", resolvedLeafRef)
 
-		// for some special cases it might be that the remotePaths or multiple iso 1.
-		// E.g. interface/subinterface or tunnel/vxlan-interface would be split in 2 paths
-		remotePaths := yparser.GetRemotePathsFromResolvedLeafRef(resolvedLeafRef)
+			// for some special cases it might be that the remotePaths or multiple iso 1.
+			// E.g. interface/subinterface or tunnel/vxlan-interface would be split in 2 paths
+			remotePaths := yparser.GetRemotePathsFromResolvedLeafRef(resolvedLeafRef)
 
-		for _, remotePath := range remotePaths {
-			// get the resourceName from the device driver that matches the remotePath in the resolved LeafaRef
-			remoteGnmiPath := make([]*gnmi.Path, 0)
-			remoteGnmiPath = append(remoteGnmiPath, remotePath)
-			externalResourceName, err := external.GetResourceName(ctx, remoteGnmiPath)
-			if err != nil {
-				log.Debug("Cannot get resource name", "error", err)
-				record.Event(managed, event.Warning(reasonCannotGetResourceName, err))
-				managed.SetConditions(nddv1.ReconcileError(errors.Wrap(err, errReconcileGetResourceName)), nddv1.Unknown())
-				return reconcile.Result{Requeue: true}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
-			}
-			log.Debug("External resource Name", "externalResourceName", externalResourceName, "remotePath", r.parser.GnmiPathToXPath(remotePath, true))
-			// only append unique externalResourceName if the external resource is managed by the ndd provider
-			if externalResourceName != "" {
-				found := false
-				for _, extResName := range externalResourceNames {
-					// only append the externalResourceName for objects that are managed by the provider
-					if extResName == externalResourceName {
-						found = true
+			for _, remotePath := range remotePaths {
+				// get the resourceName from the device driver that matches the remotePath in the resolved LeafaRef
+				//remoteGnmiPath := make([]*gnmi.Path, 0)
+				//remoteGnmiPath = append(remoteGnmiPath, remotePath)
+				externalResourceName, err := external.GetResourceName(ctx, managed, remotePath)
+				if err != nil {
+					log.Debug("Cannot get resource name", "error", err)
+					record.Event(managed, event.Warning(reasonCannotGetResourceName, err))
+					managed.SetConditions(nddv1.ReconcileError(errors.Wrap(err, errReconcileGetResourceName)), nddv1.Unknown())
+					return reconcile.Result{Requeue: true}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
+				}
+				log.Debug("External resource Name", "externalResourceName", externalResourceName, "remotePath", r.parser.GnmiPathToXPath(remotePath, true))
+				// only append unique externalResourceName if the external resource is managed by the ndd provider
+				if externalResourceName != "" {
+					found := false
+					for _, extResName := range externalResourceNames {
+						// only append the externalResourceName for objects that are managed by the provider
+						if extResName == externalResourceName {
+							found = true
+						}
 					}
+					if !found {
+						externalResourceNames = append(externalResourceNames, externalResourceName)
+					}
+				} else {
+					log.Debug("this is an external leafref of an umanaged resource of ndd, deletion of the remote leafRef will fail",
+						"path", r.parser.GnmiPathToXPath(resolvedLeafRef.RemotePath, true))
 				}
-				if !found {
-					externalResourceNames = append(externalResourceNames, externalResourceName)
-				}
-			} else {
-				log.Debug("this is an external leafref of an umanaged resource of ndd, deletion of the remote leafRef will fail",
-					"path", r.parser.GnmiPathToXPath(resolvedLeafRef.RemotePath, true))
 			}
 		}
+
 	}
 
 	log.Debug("leafref Validation", "externalResourceNames", externalResourceNames)
@@ -855,7 +860,7 @@ func (r *Reconciler) Reconcile(_ context.Context, req reconcile.Request) (reconc
 			ResourceDeletes: resourceIndexesObservation.ResourceDeletes,
 			ResourceUpdates: make([]*gnmi.Update, 0), // no updates are necessary here
 		}
-		if _, err := external.Update(externalCtx, managed, observation); err != nil {
+		if err := external.Update(externalCtx, managed, observation); err != nil {
 			// We'll hit this condition if we can't update our external resource,
 			log.Debug("Cannot update external resource")
 			record.Event(managed, event.Warning(reasonCannotUpdate, err))
@@ -888,7 +893,7 @@ func (r *Reconciler) Reconcile(_ context.Context, req reconcile.Request) (reconc
 				// remove the updates from the observation since they will get created
 				// when we create the resource
 				observation.ResourceUpdates = make([]*gnmi.Update, 0)
-				if _, err := external.Update(externalCtx, managed, observation); err != nil {
+				if err := external.Update(externalCtx, managed, observation); err != nil {
 					// We'll hit this condition if we can't update our external resource
 					log.Debug("Cannot update external resource")
 					record.Event(managed, event.Warning(reasonCannotUpdate, err))
@@ -899,7 +904,7 @@ func (r *Reconciler) Reconcile(_ context.Context, req reconcile.Request) (reconc
 			// if we are not in auto-pilot mode we should create the object
 		}
 
-		if _, err := external.Create(externalCtx, managed); err != nil {
+		if err := external.Create(externalCtx, managed); err != nil {
 			// We'll hit this condition if the grpc connection fails.
 			// If this is the first time we encounter this
 			// issue we'll be requeued implicitly when we update our status with
@@ -923,7 +928,7 @@ func (r *Reconciler) Reconcile(_ context.Context, req reconcile.Request) (reconc
 	// resource exists
 	if !observation.ResourceHasData {
 		// the resource got deleted, so we need to recreate the resource
-		if _, err := external.Create(externalCtx, managed); err != nil {
+		if err := external.Create(externalCtx, managed); err != nil {
 			// We'll hit this condition if the grpc connection fails.
 			// If this is the first time we encounter this
 			// issue we'll be requeued implicitly when we update our status with
@@ -957,7 +962,7 @@ func (r *Reconciler) Reconcile(_ context.Context, req reconcile.Request) (reconc
 		return reconcile.Result{RequeueAfter: r.pollInterval}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
 	}
 
-	if _, err := external.Update(externalCtx, managed, observation); err != nil {
+	if err := external.Update(externalCtx, managed, observation); err != nil {
 		// We'll hit this condition if we can't update our external resource,
 		log.Debug("Cannot update external resource")
 		record.Event(managed, event.Warning(reasonCannotUpdate, err))
