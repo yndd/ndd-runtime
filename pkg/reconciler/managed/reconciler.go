@@ -1041,7 +1041,7 @@ func (r *Reconciler) HandleExternalResourceFinalizer(ctx context.Context, operat
 			return errors.Wrap(err, fmt.Sprintf("Cannot remove finalizer from external resource with externalResourceName %s, gvk: %v", externalResourceName, gvk))
 		}
 	case FinalizerOperationRemove:
-		if err := r.managed.AddFinalizerString(ctx, emr, managed.GetName()); err != nil {
+		if err := r.managed.RemoveFinalizerString(ctx, emr, managed.GetName()); err != nil {
 		//if err := r.managed.RemoveFinalizerString(ctx, emr, managed.GetObjectKind().GroupVersionKind().Kind+"."+managed.GetName()); err != nil {
 			r.log.Debug("Cannot remove finalizer from external resource", "error", err, "externalResourceName", externalResourceName, "gvk", gvk)
 			return errors.Wrap(err, fmt.Sprintf("Cannot remove finalizer from external resource with externalResourceName %s, gvk: %v", externalResourceName, gvk))
