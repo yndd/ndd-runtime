@@ -48,7 +48,7 @@ const (
 	reconcileTimeout     = 1 * time.Minute
 	shortWait            = 30 * time.Second
 	mediumWait           = 15 * time.Second
-	veryShortWait        = 5 * time.Second
+	veryShortWait        = 1 * time.Second
 	longWait             = 1 * time.Minute
 
 	defaultpollInterval = 1 * time.Minute
