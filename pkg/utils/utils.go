@@ -25,18 +25,29 @@ func StringPtr(s string) *string { return &s }
 // IntPtr return pointer to int
 func IntPtr(i int) *int { return &i }
 
+// Int8Ptr return pointer to int8
+func Int8Ptr(i int8) *int8 { return &i }
+
+// Int16Ptr return pointer to int16
+func Int16Ptr(i int16) *int16 { return &i }
+
 // Int32Ptr return pointer to int32
 func Int32Ptr(i int32) *int32 { return &i }
 
 // Int64Ptr return pointer to int64
 func Int64Ptr(i int64) *int64 { return &i }
 
-// Uint32Ptr return pointer to uint32
-func Uint32Ptr(ui uint32) *uint32 { return &ui }
+// Uint8Ptr return pointer to uint8
+func Uint8Ptr(ui uint8) *uint8 { return &ui }
 
 // Uint16Ptr return pointer to uint16
 func Uint16Ptr(ui uint16) *uint16 { return &ui }
 
+// Uint32Ptr return pointer to uint32
+func Uint32Ptr(ui uint32) *uint32 { return &ui }
+
+// Uint64Ptr return pointer to uint64
+func Uint64Ptr(ui uint64) *uint64 { return &ui }
 
 func RemoveString(slice []string, s string) (result []string) {
 	for _, v := range slice {
