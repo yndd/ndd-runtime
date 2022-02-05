@@ -677,31 +677,39 @@ func (r *Reconciler) Reconcile(_ context.Context, req reconcile.Request) (reconc
 	if err != nil {
 		// TBD it can be that a change results in a deletion but the resource itself is depending on another leafref
 		// so this will fail
-		if observation.ResourceExists {
-			if err := external.Delete(externalCtx, managed); err != nil {
-				// We'll hit this condition if we can't delete our external resource
-				log.Debug("Cannot delete external resource", "error", err)
-				record.Event(managed, event.Warning(reasonCannotDelete, err))
-				managed.SetConditions(nddv1.ReconcileError(errors.Wrap(err, errReconcileDelete)), nddv1.Unknown())
-				return reconcile.Result{Requeue: true}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
+		// TBD COMMENTED FOR NOW, BUT THIS WOULD ONLY HAPPEN WHEN WE HAVE A DEPENDENCY WITH AN UMR ABD IT GOT DELETED
+		/*
+			if observation.ResourceExists {
+
+				if err := external.Delete(externalCtx, managed); err != nil {
+					// We'll hit this condition if we can't delete our external resource
+					log.Debug("Cannot delete external resource", "error", err)
+					record.Event(managed, event.Warning(reasonCannotDelete, err))
+					managed.SetConditions(nddv1.ReconcileError(errors.Wrap(err, errReconcileDelete)), nddv1.Unknown())
+					return reconcile.Result{Requeue: true}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
+				}
+
 			}
-		}
+		*/
 		log.Debug("Cannot validate external leafref", "error", err)
 		record.Event(managed, event.Warning(reasonCannotValidateLeafRef, err))
 		managed.SetConditions(nddv1.ReconcileError(errors.Wrap(err, errReconcileValidateLeafRef)), nddv1.Unknown())
 		return reconcile.Result{Requeue: true}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
 	}
 	if !leafrefObservation.Success {
-		// tbd if we have to change this, it can be that we delete a resource that has other references
-		if observation.ResourceExists {
-			if err := external.Delete(externalCtx, managed); err != nil {
-				// We'll hit this condition if we can't delete our external resource
-				log.Debug("Cannot delete external resource", "error", err)
-				record.Event(managed, event.Warning(reasonCannotDelete, err))
-				managed.SetConditions(nddv1.ReconcileError(errors.Wrap(err, errReconcileDelete)), nddv1.Unknown())
-				return reconcile.Result{Requeue: true}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
+		// TBD COMMENTED FOR NOW, BUT THIS WOULD ONLY HAPPEN WHEN WE HAVE A DEPENDENCY WITH AN UMR ABD IT GOT DELETED
+		/*
+			if observation.ResourceExists {
+					if err := external.Delete(externalCtx, managed); err != nil {
+						// We'll hit this condition if we can't delete our external resource
+						log.Debug("Cannot delete external resource", "error", err)
+						record.Event(managed, event.Warning(reasonCannotDelete, err))
+						managed.SetConditions(nddv1.ReconcileError(errors.Wrap(err, errReconcileDelete)), nddv1.Unknown())
+						return reconcile.Result{Requeue: true}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
+					}
+
 			}
-		}
+		*/
 		log.Debug("external leafref validation failed", "error", errors.New("validation failed"))
 		record.Event(managed, event.Warning(reasonValidateLeafRefFailed, errors.New("validation failed")))
 		managed.SetConditions(nddv1.LeafRefValidationFailure(), nddv1.Unavailable(), nddv1.ReconcileSuccess())
@@ -1036,13 +1044,13 @@ func (r *Reconciler) HandleExternalResourceFinalizer(ctx context.Context, operat
 	switch operation {
 	case FinalizerOperationAdd:
 		if err := r.managed.AddFinalizerString(ctx, emr, managed.GetName()); err != nil {
-		//if err := r.managed.AddFinalizerString(ctx, emr, managed.GetObjectKind().GroupVersionKind().Kind+"."+managed.GetName()); err != nil {
+			//if err := r.managed.AddFinalizerString(ctx, emr, managed.GetObjectKind().GroupVersionKind().Kind+"."+managed.GetName()); err != nil {
 			r.log.Debug("Cannot remove finalizer from external resource", "error", err, "externalResourceName", externalResourceName, "gvk", gvk)
 			return errors.Wrap(err, fmt.Sprintf("Cannot remove finalizer from external resource with externalResourceName %s, gvk: %v", externalResourceName, gvk))
 		}
 	case FinalizerOperationRemove:
 		if err := r.managed.RemoveFinalizerString(ctx, emr, managed.GetName()); err != nil {
-		//if err := r.managed.RemoveFinalizerString(ctx, emr, managed.GetObjectKind().GroupVersionKind().Kind+"."+managed.GetName()); err != nil {
+			//if err := r.managed.RemoveFinalizerString(ctx, emr, managed.GetObjectKind().GroupVersionKind().Kind+"."+managed.GetName()); err != nil {
 			r.log.Debug("Cannot remove finalizer from external resource", "error", err, "externalResourceName", externalResourceName, "gvk", gvk)
 			return errors.Wrap(err, fmt.Sprintf("Cannot remove finalizer from external resource with externalResourceName %s, gvk: %v", externalResourceName, gvk))
 		}
