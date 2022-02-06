@@ -257,6 +257,17 @@ func Unavailable() Condition {
 	}
 }
 
+// Failed returns a condition that indicates the resource is not
+// currently available for use. 
+func Failed() Condition {
+	return Condition{
+		Kind:               ConditionKindReady,
+		Status:             corev1.ConditionFalse,
+		LastTransitionTime: metav1.Now(),
+		Reason:             ConditionReasonUnavailable,
+	}
+}
+
 // ReconcileSuccess returns a condition indicating that ndd successfully
 // completed the most recent reconciliation of the resource.
 func ReconcileSuccess() Condition {

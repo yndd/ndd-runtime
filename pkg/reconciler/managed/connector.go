@@ -181,17 +181,18 @@ type ExternalObservation struct {
 	// when the cache is still initializing
 	Ready bool
 	// ResourceExists must be true if a corresponding external resource exists
-	// for the managed resource. This is checked using the resourceKey in the
-	// device driver
+	// for the managed resource. 
 	ResourceExists bool
-
+	// indicates if the resource spec was not successfully applied to the device
+	// unless the resourceSpec changes the transaction would not be successfull
+	// we dont try to reconcile unless the spec changed
+	ResourceFailed bool
 	// ResourceHasData can be true when a managed resource is created, but the
 	// device had already data in that resource. The data needs to get aligned
 	// with the intended resource data
 	ResourceHasData bool
-
 	// ResourceUpToDate should be true if the corresponding external resource
-	// appears to be up-to-date
+	// appears to be up-to-date with the resourceSpec
 	ResourceUpToDate bool
 
 	ResourceDeletes []*gnmi.Path

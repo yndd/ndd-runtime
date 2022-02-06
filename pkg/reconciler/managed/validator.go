@@ -25,9 +25,6 @@ import (
 )
 
 type Validator interface {
-	//ValidateLocalleafRef(ctx context.Context, mg resource.Managed) (ValidateLocalleafRefObservation, error)
-
-	//ValidateExternalleafRef(ctx context.Context, mg resource.Managed, cfg []byte) (ValidateExternalleafRefObservation, error)
 	ValidateLeafRef(ctx context.Context, mg resource.Managed, cfg []byte) (ValidateLeafRefObservation, error)
 
 	ValidateParentDependency(ctx context.Context, mg resource.Managed, cfg []byte) (ValidateParentDependencyObservation, error)
@@ -36,22 +33,11 @@ type Validator interface {
 }
 
 type ValidatorFn struct {
-	//ValidateLocalleafRefFn     func(ctx context.Context, mg resource.Managed) (ValidateLocalleafRefObservation, error)
-	//ValidateExternalleafRefFn  func(ctx context.Context, mg resource.Managed, cfg []byte) (ValidateExternalleafRefObservation, error)
 	ValidateLeafRefFn          func(ctx context.Context, mg resource.Managed, cfg []byte) (ValidateLeafRefObservation, error)
 	ValidateParentDependencyFn func(ctx context.Context, mg resource.Managed, cfg []byte) (ValidateParentDependencyObservation, error)
 	ValidateResourceIndexesFn  func(ctx context.Context, mg resource.Managed) (ValidateResourceIndexesObservation, error)
 }
 
-/*
-func (e ValidatorFn) ValidateLocalleafRef(ctx context.Context, mg resource.Managed) (ValidateLocalleafRefObservation, error) {
-	return e.ValidateLocalleafRefFn(ctx, mg)
-}
-
-func (e ValidatorFn) ValidateExternalleafRef(ctx context.Context, mg resource.Managed, cfg []byte) (ValidateExternalleafRefObservation, error) {
-	return e.ValidateExternalleafRefFn(ctx, mg, cfg)
-}
-*/
 func (e ValidatorFn) ValidateLeafRef(ctx context.Context, mg resource.Managed, cfg []byte) (ValidateLeafRefObservation, error) {
 	return e.ValidateLeafRefFn(ctx, mg, cfg)
 }
@@ -66,16 +52,6 @@ func (e ValidatorFn) ValidateResourceIndexes(ctx context.Context, mg resource.Ma
 
 type NopValidator struct{}
 
-/*
-func (e *NopValidator) ValidateLocalleafRef(ctx context.Context, mg resource.Managed) (ValidateLocalleafRefObservation, error) {
-	return ValidateLocalleafRefObservation{}, nil
-}
-
-func (e *NopValidator) ValidateExternalleafRef(ctx context.Context, mg resource.Managed, cfg []byte) (ValidateExternalleafRefObservation, error) {
-	return ValidateExternalleafRefObservation{}, nil
-}
-*/
-
 func (e *NopValidator) ValidateLeafRef(ctx context.Context, mg resource.Managed, cfg []byte) (ValidateLeafRefObservation, error) {
 	return ValidateLeafRefObservation{}, nil
 }
@@ -88,19 +64,6 @@ func (e *NopValidator) ValidateResourceIndexes(ctx context.Context, mg resource.
 	return ValidateResourceIndexesObservation{}, nil
 }
 
-/*
-type ValidateLocalleafRefObservation struct {
-	Success bool
-
-	ResolvedLeafRefs []*leafref.ResolvedLeafRef
-}
-
-type ValidateExternalleafRefObservation struct {
-	Success bool
-
-	ResolvedLeafRefs []*leafref.ResolvedLeafRef
-}
-*/
 type ValidateLeafRefObservation struct {
 	Success bool
 
