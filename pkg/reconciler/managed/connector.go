@@ -19,8 +19,8 @@ package managed
 import (
 	"context"
 
-	"github.com/yndd/ndd-runtime/pkg/resource"
 	"github.com/openconfig/gnmi/proto/gnmi"
+	"github.com/yndd/ndd-runtime/pkg/resource"
 )
 
 // ConnectionDetails created or updated during an operation on an external
@@ -155,7 +155,7 @@ func (c *NopClient) Create(ctx context.Context, mg resource.Managed) error {
 
 // Update does nothing. It returns an empty ExternalUpdate and no error.
 func (c *NopClient) Update(ctx context.Context, mg resource.Managed, obs ExternalObservation) error {
-	return  nil
+	return nil
 }
 
 // Delete does nothing. It never returns an error.
@@ -181,12 +181,12 @@ type ExternalObservation struct {
 	// when the cache is still initializing
 	Ready bool
 	// ResourceExists must be true if a corresponding external resource exists
-	// for the managed resource. 
+	// for the managed resource.
 	ResourceExists bool
 	// indicates if the resource spec was not successfully applied to the device
 	// unless the resourceSpec changes the transaction would not be successfull
 	// we dont try to reconcile unless the spec changed
-	ResourceFailed bool
+	ResourceSuccess bool
 	// ResourceHasData can be true when a managed resource is created, but the
 	// device had already data in that resource. The data needs to get aligned
 	// with the intended resource data
