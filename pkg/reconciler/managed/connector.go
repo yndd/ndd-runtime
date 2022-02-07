@@ -194,7 +194,7 @@ type ExternalObservation struct {
 	// ResourceUpToDate should be true if the corresponding external resource
 	// appears to be up-to-date with the resourceSpec
 	ResourceUpToDate bool
-
+	// used for resource Indexes
 	ResourceDeletes []*gnmi.Path
 	ResourceUpdates []*gnmi.Update
 }

@@ -47,7 +47,7 @@ const (
 	reconcileGracePeriod = 30 * time.Second
 	reconcileTimeout     = 1 * time.Minute
 	shortWait            = 30 * time.Second
-	mediumWait           = 15 * time.Second
+	mediumWait           = 60 * time.Second
 	veryShortWait        = 1 * time.Second
 	longWait             = 1 * time.Minute
 
@@ -497,16 +497,16 @@ func (r *Reconciler) Reconcile(_ context.Context, req reconcile.Request) (reconc
 	}
 	if !observation.Ready {
 		// When the cache is initializing we should not reconcile, so it is better to wait a reconciliation loop before retrying
-		log.Debug("External resource cache is not ready", "requeue-after", time.Now().Add(r.pollInterval))
+		log.Debug("External resource cache is not ready", "requeue-after", time.Now().Add(shortWait))
 		managed.SetConditions(nddv1.Unavailable())
-		return reconcile.Result{RequeueAfter: r.pollInterval}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
+		return reconcile.Result{RequeueAfter: shortWait}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
 	}
 
 	if !observation.ResourceSuccess {
 		// The resource was not successfully applied to the device, the spec should change to retry
-		log.Debug("External resource cache failed", "requeue-after", time.Now().Add(r.pollInterval))
+		log.Debug("External resource cache failed", "requeue-after", time.Now().Add(shortWait))
 		managed.SetConditions(nddv1.Failed())
-		return reconcile.Result{RequeueAfter: r.pollInterval}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
+		return reconcile.Result{RequeueAfter: shortWait}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
 	}
 
 	// get the full configuration of the network node in order to do leafref and parent validation
@@ -700,11 +700,15 @@ func (r *Reconciler) Reconcile(_ context.Context, req reconcile.Request) (reconc
 	if !observation.ResourceExists {
 		// if we go from an umnaged resource to a managed resource we can have dangling objects
 		// which we have to clean
+		// TBD IF WE NEED THIS SINCE THE OBSERVE DIFF SHOULD HANDLE THIS
+		/*
 		if observation.ResourceHasData {
 			// TODO add logic for autopilot and non autopilot mode of operation
 
 			// if we are in auto-pilot mode we should align the data and delete the objects
 			// if they exist to align the resource with the intended data
+
+
 			if len(observation.ResourceDeletes) != 0 {
 				// remove the updates from the observation since they will get created
 				// when we create the resource
@@ -719,6 +723,7 @@ func (r *Reconciler) Reconcile(_ context.Context, req reconcile.Request) (reconc
 			}
 			// if we are not in auto-pilot mode we should create the object
 		}
+		*/
 
 		if err := external.Create(externalCtx, managed); err != nil {
 			// We'll hit this condition if the grpc connection fails.
@@ -790,7 +795,7 @@ func (r *Reconciler) Reconcile(_ context.Context, req reconcile.Request) (reconc
 	// nothing will notify us if and when the external resource we manage
 	// changes, so we requeue a speculative reconcile after the specified poll
 	// interval in order to observe it and react accordingly.
-	log.Debug("Successfully requested update of external resource", "requeue-after", time.Now().Add(r.pollInterval))
+	log.Debug("Successfully requested update of external resource", "requeue-after", time.Now().Add(veryShortWait))
 	record.Event(managed, event.Normal(reasonUpdated, "Successfully requested update of external resource"))
 	managed.SetConditions(nddv1.ReconcileSuccess(), nddv1.Updating())
 	return reconcile.Result{RequeueAfter: veryShortWait}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
