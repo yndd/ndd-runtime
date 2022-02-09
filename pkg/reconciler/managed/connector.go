@@ -79,6 +79,9 @@ type ExternalClient interface {
 
 	// GetResourceName returns the resource that matches the path
 	GetResourceName(ctx context.Context, mg resource.Managed, path *gnmi.Path) (string, error)
+
+	// Close
+	Close()
 }
 
 // ExternalClientFns are a series of functions that satisfy the ExternalClient
@@ -91,6 +94,7 @@ type ExternalClientFns struct {
 	GetTargetFn       func() []string
 	GetConfigFn       func(ctx context.Context) ([]byte, error)
 	GetResourceNameFn func(ctx context.Context, mg resource.Managed, path *gnmi.Path) (string, error)
+	CloseFn           func()
 }
 
 // Observe the external resource the supplied Managed resource represents, if
@@ -131,6 +135,9 @@ func (e ExternalClientFns) GetConfig(ctx context.Context) ([]byte, error) {
 func (e ExternalClientFns) GetResourceName(ctx context.Context, mg resource.Managed, path *gnmi.Path) (string, error) {
 	return e.GetResourceNameFn(ctx, mg, path)
 }
+
+// GetResourceName returns the resource matching the path
+func (e ExternalClientFns) Close() {}
 
 // A NopConnecter does nothing.
 type NopConnecter struct{}
@@ -173,6 +180,8 @@ func (c *NopClient) GetConfig(ctx context.Context, mg resource.Managed) ([]byte,
 func (c *NopClient) GetResourceName(ctx context.Context, mg resource.Managed, path *gnmi.Path) (string, error) {
 	return "", nil
 }
+
+func (c *NopClient) Close() {}
 
 // An ExternalObservation is the result of an observation of an external
 // resource.

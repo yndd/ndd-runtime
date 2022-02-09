@@ -400,6 +400,8 @@ func (r *Reconciler) Reconcile(_ context.Context, req reconcile.Request) (reconc
 		return reconcile.Result{Requeue: true}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
 	}
 
+	defer external.Close()
+
 	// given we can connect to the network node device driver, the target is found
 	// update codition and update the status field
 	managed.SetConditions(nddv1.TargetFound())
