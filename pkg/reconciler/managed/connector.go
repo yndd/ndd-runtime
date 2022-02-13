@@ -186,6 +186,9 @@ func (c *NopClient) Close() {}
 // An ExternalObservation is the result of an observation of an external
 // resource.
 type ExternalObservation struct {
+	// indicated if the cache is exhausted or not, during cache startup this can occur
+	// when the cache/device is overloaded
+	Exhausted bool
 	// indicated if the cache is ready or not, during cache startup this can occur
 	// when the cache is still initializing
 	Ready bool
