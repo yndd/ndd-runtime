@@ -169,7 +169,7 @@ func (a *APIFinalizer) RemoveFinalizer(ctx context.Context, obj Object) error {
 
 // AddFinalizer to the supplied Managed resource.
 func (a *APIFinalizer) AddFinalizerString(ctx context.Context, obj Object, finalizerString string) error {
-	fmt.Printf("AddFinalizerString finalizerString: %s\n", finalizerString)
+	//fmt.Printf("AddFinalizerString finalizerString: %s\n", finalizerString)
 	f := obj.GetFinalizers()
 	found := false
 	for _, ff := range f {
@@ -182,7 +182,7 @@ func (a *APIFinalizer) AddFinalizerString(ctx context.Context, obj Object, final
 		f = append(f, finalizerString)
 		obj.SetFinalizers(f)
 	}
-	fmt.Printf("AddFinalizerString finalizers end: %v\n", obj.GetFinalizers())
+	//fmt.Printf("AddFinalizerString finalizers end: %v\n", obj.GetFinalizers())
 	return errors.Wrap(a.client.Update(ctx, obj), errUpdateObject)
 }
 
