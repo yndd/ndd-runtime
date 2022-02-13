@@ -323,7 +323,7 @@ func (r *Reconciler) Reconcile(_ context.Context, req reconcile.Request) (reconc
 		// We've successfully removed our finalizer. If we assume we were the only
 		// controller that added a finalizer to this resource then it should no
 		// longer exist and thus there is no point trying to update its status.
-		log.Debug("Successfully deleted managed resource")
+		// log.Debug("Successfully deleted managed resource")
 		return reconcile.Result{Requeue: false}, nil
 	}
 
@@ -371,7 +371,7 @@ func (r *Reconciler) Reconcile(_ context.Context, req reconcile.Request) (reconc
 			// removed our finalizer. If we assume we were the only controller that
 			// added a finalizer to this resource then it should no longer exist and
 			// thus there is no point trying to update its status.
-			log.Debug("Successfully deleted managed resource")
+			// log.Debug("Successfully deleted managed resource")
 			return reconcile.Result{Requeue: false}, nil
 		}
 		// Set validation status to unknown if the target is not found
@@ -383,18 +383,18 @@ func (r *Reconciler) Reconcile(_ context.Context, req reconcile.Request) (reconc
 		if strings.Contains(fmt.Sprintf("%s", err), "not found") ||
 			strings.Contains(fmt.Sprintf("%s", err), "not configured") ||
 			strings.Contains(fmt.Sprintf("%s", err), "not ready") {
-			log.Debug("network node not found")
+			//log.Debug("network node not found")
 			record.Event(managed, event.Warning(reasonCannotGetValidTarget, err))
 			managed.SetConditions(nddv1.TargetNotFound(), nddv1.Unavailable(), nddv1.ReconcileSuccess())
 			return reconcile.Result{RequeueAfter: shortWait}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
 		}
-		log.Debug("network node error different from not found")
+		//log.Debug("network node error different from not found")
 		// We'll usually hit this case if our Provider or its secret are missing
 		// or invalid. If this is first time we encounter this issue we'll be
 		// requeued implicitly when we update our status with the new error
 		// condition. If not, we requeue explicitly, which will trigger
 		// backoff.
-		log.Debug("Cannot connect to network node device driver", "error", err)
+		//log.Debug("Cannot connect to network node device driver", "error", err)
 		record.Event(managed, event.Warning(reasonCannotConnect, err))
 		managed.SetConditions(nddv1.ReconcileError(errors.Wrap(err, errReconcileConnect)), nddv1.Unavailable(), nddv1.TargetFound())
 		return reconcile.Result{Requeue: true}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
@@ -465,7 +465,7 @@ func (r *Reconciler) Reconcile(_ context.Context, req reconcile.Request) (reconc
 			// we'll skip this block on the next reconcile and proceed to
 			// unpublish and finalize. If it still exists we'll re-enter this
 			// block and try again.
-			log.Debug("Successfully requested deletion of external resource")
+			// log.Debug("Successfully requested deletion of external resource")
 			record.Event(managed, event.Normal(reasonDeleted, "Successfully requested deletion of external resource"))
 			managed.SetConditions(nddv1.ReconcileSuccess())
 			return reconcile.Result{RequeueAfter: veryShortWait}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
@@ -494,7 +494,7 @@ func (r *Reconciler) Reconcile(_ context.Context, req reconcile.Request) (reconc
 		// removed our finalizer. If we assume we were the only controller that
 		// added a finalizer to this resource then it should no longer exist and
 		// thus there is no point trying to update its status.
-		log.Debug("Successfully deleted managed resource")
+		// log.Debug("Successfully deleted managed resource")
 		return reconcile.Result{Requeue: false}, nil
 	}
 	if !observation.Ready {
@@ -602,7 +602,7 @@ func (r *Reconciler) Reconcile(_ context.Context, req reconcile.Request) (reconc
 	for _, resolvedLeafRef := range leafrefObservation.ResolvedLeafRefs {
 		// the external finalizer handling is only required for external leafrefs
 		if resolvedLeafRef.External {
-			log.WithValues("resolvedLeafRef", resolvedLeafRef)
+			//log.WithValues("resolvedLeafRef", resolvedLeafRef)
 
 			// for some special cases it might be that the remotePaths or multiple iso 1.
 			// E.g. interface/subinterface or tunnel/vxlan-interface would be split in 2 paths
@@ -617,7 +617,7 @@ func (r *Reconciler) Reconcile(_ context.Context, req reconcile.Request) (reconc
 					managed.SetConditions(nddv1.ReconcileError(errors.Wrap(err, errReconcileGetResourceName)), nddv1.Unknown())
 					return reconcile.Result{Requeue: true}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
 				}
-				log.Debug("External resource Name", "externalResourceName", externalResourceName, "remotePath", r.parser.GnmiPathToXPath(remotePath, true))
+				//log.Debug("External resource Name", "externalResourceName", externalResourceName, "remotePath", r.parser.GnmiPathToXPath(remotePath, true))
 				// only append unique externalResourceName if the external resource is managed by the ndd provider
 				if externalResourceName != "" {
 					found := false
@@ -638,7 +638,7 @@ func (r *Reconciler) Reconcile(_ context.Context, req reconcile.Request) (reconc
 		}
 	}
 
-	log.Debug("leafref Validation", "externalResourceNames", externalResourceNames)
+	//log.Debug("leafref Validation", "externalResourceNames", externalResourceNames)
 	for _, externalResourceName := range externalResourceNames {
 		// for all external resolved names we need to add a finalizer to the external resource
 		if err := r.HandleExternalResourceFinalizer(ctx, FinalizerOperationAdd, externalResourceName, managed); err != nil {
@@ -646,7 +646,7 @@ func (r *Reconciler) Reconcile(_ context.Context, req reconcile.Request) (reconc
 			return reconcile.Result{Requeue: true}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
 		}
 	}
-	log.Debug("External Leafref Validation", "externalResourceNames", externalResourceNames)
+	//log.Debug("External Leafref Validation", "externalResourceNames", externalResourceNames)
 
 	managed.SetConditions(nddv1.LeafRefValidationSuccess())
 	// we need to check the delta between the existing External LeafRefs and the new LeaRefs
@@ -698,7 +698,7 @@ func (r *Reconciler) Reconcile(_ context.Context, req reconcile.Request) (reconc
 		return reconcile.Result{Requeue: true}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
 	}
 
-	log.Debug("Observation", "observation", observation)
+	//log.Debug("Observation", "observation", observation)
 	if !observation.ResourceExists {
 		// if we go from an umnaged resource to a managed resource we can have dangling objects
 		// which we have to clean
@@ -743,7 +743,7 @@ func (r *Reconciler) Reconcile(_ context.Context, req reconcile.Request) (reconc
 		// creation process takes a little time to finish. We requeue explicitly
 		// order to observe the external resource to determine whether it's
 		// ready for use.
-		log.Debug("Successfully requested creation of external resource")
+		//log.Debug("Successfully requested creation of external resource")
 		record.Event(managed, event.Normal(reasonCreated, "Successfully requested creation of external resource"))
 		managed.SetConditions(nddv1.ReconcileSuccess())
 		return reconcile.Result{RequeueAfter: veryShortWait}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
@@ -767,7 +767,7 @@ func (r *Reconciler) Reconcile(_ context.Context, req reconcile.Request) (reconc
 		// creation process takes a little time to finish. We requeue explicitly
 		// order to observe the external resource to determine whether it's
 		// ready for use.
-		log.Debug("Successfully requested creation of external resource")
+		//log.Debug("Successfully requested creation of external resource")
 		record.Event(managed, event.Normal(reasonCreated, "Successfully requested creation of external resource"))
 		managed.SetConditions(nddv1.ReconcileSuccess())
 		return reconcile.Result{RequeueAfter: veryShortWait}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
@@ -797,7 +797,7 @@ func (r *Reconciler) Reconcile(_ context.Context, req reconcile.Request) (reconc
 	// nothing will notify us if and when the external resource we manage
 	// changes, so we requeue a speculative reconcile after the specified poll
 	// interval in order to observe it and react accordingly.
-	log.Debug("Successfully requested update of external resource", "requeue-after", time.Now().Add(veryShortWait))
+	//log.Debug("Successfully requested update of external resource", "requeue-after", time.Now().Add(veryShortWait))
 	record.Event(managed, event.Normal(reasonUpdated, "Successfully requested update of external resource"))
 	managed.SetConditions(nddv1.ReconcileSuccess(), nddv1.Updating())
 	return reconcile.Result{RequeueAfter: veryShortWait}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
