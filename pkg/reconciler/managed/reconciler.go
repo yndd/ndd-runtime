@@ -47,7 +47,7 @@ const (
 	reconcileGracePeriod = 30 * time.Second
 	reconcileTimeout     = 1 * time.Minute
 	shortWait            = 30 * time.Second
-	mediumWait           = 60 * time.Second
+	mediumWait           = 1 * time.Minute
 	veryShortWait        = 1 * time.Second
 	longWait             = 1 * time.Minute
 
@@ -791,7 +791,7 @@ func (r *Reconciler) Reconcile(_ context.Context, req reconcile.Request) (reconc
 		// after the specified poll interval in order to observe it and react
 		// accordingly.
 		log.Debug("External resource is up to date", "requeue-after", time.Now().Add(r.pollInterval))
-		managed.SetConditions(nddv1.ReconcileSuccess(), nddv1.Available())
+		managed.SetConditions(nddv1.ReconcileSuccess(), nddv1.Available(), nddv1.LeafRefValidationSuccess(), nddv1.ParentValidationSuccess())
 		return reconcile.Result{RequeueAfter: r.pollInterval}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
 	}
 
