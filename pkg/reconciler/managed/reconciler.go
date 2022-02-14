@@ -511,6 +511,13 @@ func (r *Reconciler) Reconcile(_ context.Context, req reconcile.Request) (reconc
 		return reconcile.Result{RequeueAfter: mediumWait}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
 	}
 
+	if !observation.ActionExecuted {
+		//Action was not yet executed so there is no point in doing further validation
+		log.Debug("External resource cache is exhausted", "requeue-after", time.Now().Add(mediumWait))
+		managed.SetConditions(nddv1.Unavailable())
+		return reconcile.Result{RequeueAfter: shortWait}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
+	}
+
 	if !observation.ResourceSuccess {
 		// The resource was not successfully applied to the device, the spec should change to retry
 		log.Debug("External resource cache failed", "requeue-after", time.Now().Add(shortWait))

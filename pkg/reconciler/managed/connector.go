@@ -192,6 +192,8 @@ type ExternalObservation struct {
 	// indicated if the cache is ready or not, during cache startup this can occur
 	// when the cache is still initializing
 	Ready bool
+	// ActionExecuted the respective action on the resource was executed, so we can validate the status
+	ActionExecuted bool
 	// ResourceExists must be true if a corresponding external resource exists
 	// for the managed resource.
 	ResourceExists bool
