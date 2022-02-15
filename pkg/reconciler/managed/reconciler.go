@@ -513,7 +513,7 @@ func (r *Reconciler) Reconcile(_ context.Context, req reconcile.Request) (reconc
 
 	if !observation.ActionExecuted {
 		//Action was not yet executed so there is no point in doing further validation
-		log.Debug("External resource cache is exhausted", "requeue-after", time.Now().Add(mediumWait))
+		log.Debug("Action is not yet executed", "requeue-after", time.Now().Add(shortWait))
 		managed.SetConditions(nddv1.Unavailable())
 		return reconcile.Result{RequeueAfter: shortWait}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
 	}
