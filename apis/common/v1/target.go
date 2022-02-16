@@ -21,6 +21,7 @@ import (
 	"github.com/karimra/gnmic/types"
 )
 
+// +k8s:deepcopy-gen=false
 type Target struct {
 	// Name of the Target
 	Name   string  `json:"name,omitempty"`
