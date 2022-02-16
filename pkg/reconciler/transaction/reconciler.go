@@ -199,7 +199,7 @@ func WithRecorder(er event.Recorder) ReconcilerOption {
 // Reconciler reconciles with a dummy, no-op 'external system' by default;
 // callers should supply an ExternalConnector that returns an ExternalClient
 // capable of managing resources in a real system.
-func NewReconciler(m manager.Manager, of resource.ManagedKind, o ...ReconcilerOption) *Reconciler {
+func NewReconciler(m manager.Manager, of tresource.TransactionKind, o ...ReconcilerOption) *Reconciler {
 	nt := func() tresource.Transaction {
 		return resource.MustCreateObject(schema.GroupVersionKind(of), m.GetScheme()).(tresource.Transaction)
 	}
