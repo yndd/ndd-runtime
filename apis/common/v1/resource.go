@@ -111,7 +111,7 @@ type NetworkNodeStatus struct {
 	Users int64 `json:"users,omitempty"`
 }
 
-type TransactionStatus struct {
+type TransactionResourceStatus struct {
 	// the condition status
 	ConditionedStatus `json:",inline"`
 

@@ -192,6 +192,12 @@ func WithRecorder(er event.Recorder) ReconcilerOption {
 	}
 }
 
+func WithHandler(h Handler) ReconcilerOption {
+	return func(r *Reconciler) {
+		r.handler.Handler = h
+	}
+}
+
 // NewReconciler returns a Reconciler that reconciles managed resources of the
 // supplied ManagedKind with resources in an external network device.
 // It panics if asked to reconcile a managed resource kind that is
@@ -301,18 +307,18 @@ func (r *Reconciler) Reconcile(_ context.Context, req reconcile.Request) (reconc
 			continue
 		}
 
-		if !observation.Ready {
+		if observation.Exhausted {
 			// When the cache is initializing we should not reconcile, so it is better to wait a reconciliation loop before retrying
-			log.Debug("External resource cache is not ready", "requeue-after", time.Now().Add(shortWait))
+			log.Debug("External resource cache is exhausted")
 			tr.SetDeviceConditions(deviceName, nddv1.Unavailable())
 			// we stop now and continue to the next device if it is available
 			allDeviceTransactionsCompleted = false
 			continue
 		}
 
-		if observation.Exhausted {
+		if !observation.Ready {
 			// When the cache is initializing we should not reconcile, so it is better to wait a reconciliation loop before retrying
-			log.Debug("External resource cache is exhausted", "requeue-after", time.Now().Add(mediumWait))
+			log.Debug("External resource cache is not ready")
 			tr.SetDeviceConditions(deviceName, nddv1.Unavailable())
 			// we stop now and continue to the next device if it is available
 			allDeviceTransactionsCompleted = false
@@ -330,7 +336,6 @@ func (r *Reconciler) Reconcile(_ context.Context, req reconcile.Request) (reconc
 		// validate if all resources of the transaction are present in the cache
 		complete, gvkList, err := r.validateResourcesPerTransactionInCache(tr, observation.GvkResourceList, deviceName, deviceCrs)
 		if err != nil {
-
 			allDeviceTransactionsCompleted = false
 			continue
 		}
