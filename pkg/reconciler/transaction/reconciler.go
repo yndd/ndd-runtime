@@ -325,7 +325,7 @@ func (r *Reconciler) Reconcile(_ context.Context, req reconcile.Request) (reconc
 			continue
 		}
 
-		if !observation.Pending {
+		if observation.Pending {
 			//Action was not yet executed so there is no point in doing further reconciliation
 			// we dont update the status
 			// we stop now and continue to the next device if it is available
