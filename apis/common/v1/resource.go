@@ -120,7 +120,7 @@ type TransactionResourceStatus struct {
 }
 
 type TransactionDeviceStatus struct {
-	DeviceName *string `json:"deviceName,omitempty"`
+	//DeviceName *string `json:"deviceName,omitempty"`
 	// the condition status
 	ConditionedStatus `json:",inline"`
 }
