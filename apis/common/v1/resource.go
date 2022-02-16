@@ -116,11 +116,11 @@ type TransactionResourceStatus struct {
 	ConditionedStatus `json:",inline"`
 
 	// conditionsStatus per device
-	Device []*TransactionDeviceStatus `json:"device,omitempty"`
+	Device map[string]*TransactionDeviceStatus `json:"device,omitempty"`
 }
 
 type TransactionDeviceStatus struct {
-	DeviceName *string `json:"deviceName,omitempty"`
+	//DeviceName *string `json:"deviceName,omitempty"`
 	// the condition status
 	ConditionedStatus `json:",inline"`
 }
