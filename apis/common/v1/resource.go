@@ -111,6 +111,14 @@ type NetworkNodeStatus struct {
 	Users int64 `json:"users,omitempty"`
 }
 
+type TransactionStatus struct {
+	// the condition status
+	ConditionedStatus `json:",inline"`
+
+	// conditionsStatus per device
+	Device map[string]*ConditionedStatus `json:"device,omitempty"`
+}
+
 // A NetworkNodeUsage is a record that a particular managed resource is using
 // a particular network node configuration.
 type NetworkNodeUsage struct {

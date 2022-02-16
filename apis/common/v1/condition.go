@@ -62,6 +62,7 @@ const (
 	ConditionReasonUpdating    ConditionReason = "Updating"
 	ConditionReasonUnavailable ConditionReason = "UnAvailable"
 	ConditionReasonAvailable   ConditionReason = "Available"
+	ConditionReasonPending     ConditionReason = "Pending"
 )
 
 // Reasons a resource is or is not synced.
@@ -258,13 +259,24 @@ func Unavailable() Condition {
 }
 
 // Failed returns a condition that indicates the resource is not
-// currently available for use. 
+// currently available for use.
 func Failed() Condition {
 	return Condition{
 		Kind:               ConditionKindReady,
 		Status:             corev1.ConditionFalse,
 		LastTransitionTime: metav1.Now(),
 		Reason:             ConditionReasonUnavailable,
+	}
+}
+
+// Pending returns a condition that indicates the resource is not
+// currently available for use and is still being processed
+func Pending() Condition {
+	return Condition{
+		Kind:               ConditionKindReady,
+		Status:             corev1.ConditionFalse,
+		LastTransitionTime: metav1.Now(),
+		Reason:             ConditionReasonPending,
 	}
 }
 

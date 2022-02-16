@@ -9,7 +9,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/afero v1.6.0
 	github.com/yndd/ndd-yang v0.1.515
-	github.com/yndd/nddp-system v0.0.13
+	github.com/yndd/nddp-system v0.0.25
 	golang.org/x/time v0.0.0-20210723032227-1f47c861a9ac
 	k8s.io/api v0.22.2
 	k8s.io/apimachinery v0.22.2
