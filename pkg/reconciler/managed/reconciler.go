@@ -513,7 +513,7 @@ func (r *Reconciler) Reconcile(_ context.Context, req reconcile.Request) (reconc
 	}
 
 	// this should be handled after the delete check otherwise if a resource was in pending state it would never be executed
-	if !observation.ActionExecuted {
+	if observation.ResourceExists && !observation.ActionExecuted {
 		//Action was not yet executed so there is no point in doing further reconciliation
 		log.Debug("Action is not yet executed", "requeue-after", time.Now().Add(veryShortWait))
 		managed.SetConditions(nddv1.Unavailable())
