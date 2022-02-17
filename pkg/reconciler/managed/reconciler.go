@@ -436,13 +436,6 @@ func (r *Reconciler) Reconcile(_ context.Context, req reconcile.Request) (reconc
 		return reconcile.Result{RequeueAfter: mediumWait}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
 	}
 
-	if !observation.ActionExecuted {
-		//Action was not yet executed so there is no point in doing further reconciliation
-		log.Debug("Action is not yet executed", "requeue-after", time.Now().Add(veryShortWait))
-		managed.SetConditions(nddv1.Unavailable())
-		return reconcile.Result{RequeueAfter: veryShortWait}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
-	}
-
 	if meta.WasDeleted(managed) {
 		// delete triggered
 		log = log.WithValues("deletion-timestamp", managed.GetDeletionTimestamp())
@@ -517,6 +510,14 @@ func (r *Reconciler) Reconcile(_ context.Context, req reconcile.Request) (reconc
 		// thus there is no point trying to update its status.
 		// log.Debug("Successfully deleted managed resource")
 		return reconcile.Result{Requeue: false}, nil
+	}
+
+	// this should be handled after the delete check otherwise if a resource was in pending state it would never be executed
+	if !observation.ActionExecuted {
+		//Action was not yet executed so there is no point in doing further reconciliation
+		log.Debug("Action is not yet executed", "requeue-after", time.Now().Add(veryShortWait))
+		managed.SetConditions(nddv1.Unavailable())
+		return reconcile.Result{RequeueAfter: veryShortWait}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
 	}
 
 	if !observation.ResourceSuccess {
