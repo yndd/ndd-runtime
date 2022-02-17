@@ -258,6 +258,15 @@ func (r *Reconciler) Reconcile(_ context.Context, req reconcile.Request) (reconc
 		"version", tr.GetResourceVersion(),
 	)
 
+	if err := r.transaction.AddFinalizer(ctx, tr); err != nil {
+		// If this is the first time we encounter this issue we'll be requeued
+		// implicitly when we update our status with the new error condition. If
+		// not, we requeue explicitly, which will trigger backoff.
+		log.Debug("Cannot add finalizer", "error", err)
+		tr.SetConditions(nddv1.ReconcileError(err), nddv1.Unknown())
+		return reconcile.Result{Requeue: true}, errors.Wrap(r.client.Status().Update(ctx, tr), errUpdateTransactionStatus)
+	}
+
 	resources, err := r.handler.GetResources(ctx, tr)
 	if err != nil {
 		record.Event(tr, event.Warning(reasonCannotGetResources, err))
@@ -430,6 +439,23 @@ func (r *Reconciler) Reconcile(_ context.Context, req reconcile.Request) (reconc
 	if !allDeviceTransactionsCompleted {
 		tr.SetConditions(nddv1.ReconcileSuccess(), nddv1.Pending())
 		return reconcile.Result{RequeueAfter: shortWait}, errors.Wrap(r.client.Status().Update(ctx, tr), errUpdateTransactionStatus)
+	}
+
+	if meta.WasDeleted(tr) {
+		if err := r.transaction.RemoveFinalizer(ctx, tr); err != nil {
+			// If this is the first time we encounter this issue we'll be
+			// requeued implicitly when we update our status with the new error
+			// condition. If not, we requeue explicitly, which will trigger
+			// backoff.
+			log.Debug("Cannot remove managed resource finalizer", "error", err)
+			tr.SetConditions(nddv1.ReconcileError(err), nddv1.Unknown())
+			return reconcile.Result{Requeue: true}, errors.Wrap(r.client.Status().Update(ctx, tr), errUpdateTransactionStatus)
+		}
+		// We've successfully removed our finalizer. If we assume we were the only
+		// controller that added a finalizer to this resource then it should no
+		// longer exist and thus there is no point trying to update its status.
+		// log.Debug("Successfully deleted managed resource")
+		return reconcile.Result{Requeue: false}, nil
 	}
 
 	if !success {
