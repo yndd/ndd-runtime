@@ -501,7 +501,8 @@ func (r *Reconciler) validateResourcesPerTransactionInCache(tr tresource.Transac
 	}
 
 	// when the transaction list is complete all the deviceCrPerKind entries should be 0
-	for _, deviceCrPerKind := range deviceCrs {
+	for deviceKind, deviceCrPerKind := range deviceCrs {
+		r.log.Debug("validateResourcesPerTransactionInCache leftover", "deviceKind", deviceKind, "deviceCrPerKind", deviceCrPerKind)
 		if len(deviceCrPerKind) != 0 {
 			return false, gvkList, nil
 		}
