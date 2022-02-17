@@ -471,6 +471,10 @@ func (r *Reconciler) validateResourcesPerTransactionInCache(tr tresource.Transac
 	// initialize the gvkList per device
 	gvkList := make([]string, 0)
 
+	if len(gvkresourceList) == 0 {
+		return false, gvkList, nil
+	}
+
 	for _, gvkResource := range gvkresourceList {
 		gvk, err := gvkresource.String2Gvk(gvkResource.Name)
 		if err != nil {
