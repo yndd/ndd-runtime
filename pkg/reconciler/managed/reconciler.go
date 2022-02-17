@@ -520,7 +520,7 @@ func (r *Reconciler) Reconcile(_ context.Context, req reconcile.Request) (reconc
 		return reconcile.Result{RequeueAfter: veryShortWait}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
 	}
 
-	if !observation.ResourceSuccess {
+	if observation.ResourceFailed {
 		// The resource was not successfully applied to the device, the spec should change to retry
 		log.Debug("External resource cache failed", "requeue-after", time.Now().Add(shortWait))
 		managed.SetConditions(nddv1.Failed())
@@ -528,7 +528,7 @@ func (r *Reconciler) Reconcile(_ context.Context, req reconcile.Request) (reconc
 	}
 
 	// if the resource is up to date and if the resource exists dont perform validations
-	if gvkresource.GetTransaction(managed) == gvkresource.TransactionNone && !(observation.ResourceExists && observation.ResourceUpToDate) {
+	if gvkresource.GetTransaction(managed) == gvkresource.TransactionNone && !observation.ResourceUpToDate {
 		// get the full configuration of the network node in order to do leafref and parent validation
 
 		log.Debug("Validation", "observation", observation, "transaction", gvkresource.GetTransaction(managed))
