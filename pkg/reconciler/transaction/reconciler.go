@@ -471,6 +471,7 @@ func (r *Reconciler) validateResourcesPerTransactionInCache(tr tresource.Transac
 	// initialize the gvkList per device
 	gvkList := make([]string, 0)
 
+	// if the gvkresourceList is empty there should not be a transaction so we return incomplete
 	if len(gvkresourceList) == 0 {
 		return false, gvkList, nil
 	}
