@@ -348,6 +348,7 @@ func (r *Reconciler) Reconcile(_ context.Context, req reconcile.Request) (reconc
 			allDeviceTransactionsCompleted = false
 			continue
 		}
+		log.Debug("transaction complete", "complete", complete)
 		if !complete {
 			allDeviceTransactionsCompleted = false
 			continue
