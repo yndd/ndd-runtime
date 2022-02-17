@@ -438,7 +438,7 @@ func (r *Reconciler) Reconcile(_ context.Context, req reconcile.Request) (reconc
 
 	if !allDeviceTransactionsCompleted {
 		tr.SetConditions(nddv1.ReconcileSuccess(), nddv1.Pending())
-		return reconcile.Result{RequeueAfter: shortWait}, errors.Wrap(r.client.Status().Update(ctx, tr), errUpdateTransactionStatus)
+		return reconcile.Result{RequeueAfter: veryShortWait}, errors.Wrap(r.client.Status().Update(ctx, tr), errUpdateTransactionStatus)
 	}
 
 	if meta.WasDeleted(tr) {
