@@ -756,7 +756,7 @@ func (r *Reconciler) Reconcile(_ context.Context, req reconcile.Request) (reconc
 			}
 		*/
 
-		if err := external.Create(externalCtx, managed); err != nil {
+		if err := external.Create(externalCtx, managed, false); err != nil {
 			// We'll hit this condition if the grpc connection fails.
 			// If this is the first time we encounter this
 			// issue we'll be requeued implicitly when we update our status with
@@ -780,7 +780,7 @@ func (r *Reconciler) Reconcile(_ context.Context, req reconcile.Request) (reconc
 	// resource exists
 	if !observation.HasData {
 		// the resource got deleted, so we need to recreate the resource
-		if err := external.Create(externalCtx, managed); err != nil {
+		if err := external.Create(externalCtx, managed, true); err != nil {
 			// We'll hit this condition if the grpc connection fails.
 			// If this is the first time we encounter this
 			// issue we'll be requeued implicitly when we update our status with

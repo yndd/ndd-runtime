@@ -60,7 +60,7 @@ type ExternalClient interface {
 	// Create an external resource per the specifications of the supplied
 	// Managed resource. Called when Observe reports that the associated
 	// external resource does not exist.
-	Create(ctx context.Context, mg resource.Managed) error
+	Create(ctx context.Context, mg resource.Managed, ignoreTransaction bool) error
 
 	// Update the external resource represented by the supplied Managed
 	// resource, if necessary. Called unless Observe reports that the
@@ -156,7 +156,7 @@ func (c *NopClient) Observe(ctx context.Context, mg resource.Managed) (ExternalO
 }
 
 // Create does nothing. It returns an empty ExternalCreation and no error.
-func (c *NopClient) Create(ctx context.Context, mg resource.Managed) error {
+func (c *NopClient) Create(ctx context.Context, mg resource.Managed, ignoreTransaction bool) error {
 	return nil
 }
 
