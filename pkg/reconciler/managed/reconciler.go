@@ -756,6 +756,7 @@ func (r *Reconciler) Reconcile(_ context.Context, req reconcile.Request) (reconc
 			}
 		*/
 
+		// this is done for transaction to ensure we add a finalizer
 		if err := r.managed.AddFinalizer(ctx, managed); err != nil {
 			// If this is the first time we encounter this issue we'll be requeued
 			// implicitly when we update our status with the new error condition. If
