@@ -287,6 +287,7 @@ func (r *Reconciler) Reconcile(_ context.Context, req reconcile.Request) (reconc
 		log = log.WithValues("deletion-timestamp", managed.GetDeletionTimestamp())
 		managed.SetConditions(nddv1.Deleting())
 
+
 		// check if the resource has external leafref dependencies, if so it cannot be deleted
 		hasOtherFinalizer, err := r.managed.HasOtherFinalizer(ctx, managed)
 		if err != nil {
@@ -441,6 +442,12 @@ func (r *Reconciler) Reconcile(_ context.Context, req reconcile.Request) (reconc
 		log = log.WithValues("deletion-timestamp", managed.GetDeletionTimestamp())
 		managed.SetConditions(nddv1.Deleting())
 
+		// for transactions we dont delete if the status is pending since the delete is happening in the transaction
+		// when the transaction delete succeeded the status will be Exists == false
+		if gvkresource.GetTransaction(managed) != gvkresource.TransactionNone && observation.Pending {
+			return reconcile.Result{RequeueAfter: veryShortWait}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
+		}
+
 		// if the resource has external leafref dependencies, we cannot delete the
 		// resource
 		hasOtherFinalizer, err := r.managed.HasOtherFinalizer(ctx, managed)
@@ -458,7 +465,7 @@ func (r *Reconciler) Reconcile(_ context.Context, req reconcile.Request) (reconc
 		// We'll only reach this point if deletion policy is not orphan, so we
 		// are safe to call external deletion if external resource exists or the
 		// resource has data
-		if observation.ResourceExists || observation.ResourceHasData {
+		if observation.Exists || observation.HasData {
 			if err := external.Delete(externalCtx, managed); err != nil {
 				// We'll hit this condition if we can't delete our external
 				// resource, for example if our provider credentials don't have
@@ -513,22 +520,23 @@ func (r *Reconciler) Reconcile(_ context.Context, req reconcile.Request) (reconc
 	}
 
 	// this should be handled after the delete check otherwise if a resource was in pending state it would never be executed
-	if observation.ResourceExists && !observation.ActionExecuted {
+	if observation.Exists && observation.Pending {
 		//Action was not yet executed so there is no point in doing further reconciliation
 		log.Debug("Action is not yet executed", "requeue-after", time.Now().Add(veryShortWait))
 		managed.SetConditions(nddv1.Unavailable())
 		return reconcile.Result{RequeueAfter: veryShortWait}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
 	}
 
-	if observation.ResourceFailed {
+	if observation.Failed {
 		// The resource was not successfully applied to the device, the spec should change to retry
 		log.Debug("External resource cache failed", "requeue-after", time.Now().Add(shortWait))
 		managed.SetConditions(nddv1.Failed())
 		return reconcile.Result{RequeueAfter: shortWait}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
 	}
 
-	// if the resource is up to date and if the resource exists dont perform validations
-	if gvkresource.GetTransaction(managed) == gvkresource.TransactionNone && !observation.ResourceUpToDate {
+	// for transactions we dont do validations
+	// when the resource is up to date we dont do validations
+	if gvkresource.GetTransaction(managed) == gvkresource.TransactionNone && !observation.IsUpToDate {
 		// get the full configuration of the network node in order to do leafref and parent validation
 
 		log.Debug("Validation", "observation", observation, "transaction", gvkresource.GetTransaction(managed))
@@ -542,7 +550,7 @@ func (r *Reconciler) Reconcile(_ context.Context, req reconcile.Request) (reconc
 
 		parentDependencyObservation, err := r.validator.ValidateParentDependency(ctx, managed, cfg)
 		if err != nil {
-			if observation.ResourceExists {
+			if observation.Exists {
 				if err := external.Delete(externalCtx, managed); err != nil {
 					// We'll hit this condition if we can't delete our external resource
 					log.Debug("Cannot delete external resource", "error", err)
@@ -557,7 +565,7 @@ func (r *Reconciler) Reconcile(_ context.Context, req reconcile.Request) (reconc
 			return reconcile.Result{Requeue: true}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
 		}
 		if !parentDependencyObservation.Success {
-			if observation.ResourceExists {
+			if observation.Exists {
 				if err := external.Delete(externalCtx, managed); err != nil {
 					// We'll hit this condition if we can't delete our external resource
 					log.Debug("Cannot delete external resource", "error", err)
@@ -695,8 +703,8 @@ func (r *Reconciler) Reconcile(_ context.Context, req reconcile.Request) (reconc
 		if resourceIndexesObservation.Changed {
 			// we reuse the observation object
 			observation := ExternalObservation{
-				ResourceDeletes: resourceIndexesObservation.ResourceDeletes,
-				ResourceUpdates: make([]*gnmi.Update, 0), // no updates are necessary here
+				Deletes: resourceIndexesObservation.ResourceDeletes,
+				Updates: make([]*gnmi.Update, 0), // no updates are necessary here
 			}
 			if err := external.Update(externalCtx, managed, observation); err != nil {
 				// We'll hit this condition if we can't update our external resource,
@@ -720,7 +728,7 @@ func (r *Reconciler) Reconcile(_ context.Context, req reconcile.Request) (reconc
 	}
 
 	//log.Debug("Observation", "observation", observation)
-	if !observation.ResourceExists {
+	if !observation.Exists {
 		// if we go from an umnaged resource to a managed resource we can have dangling objects
 		// which we have to clean
 		// TBD IF WE NEED THIS SINCE THE OBSERVE DIFF SHOULD HANDLE THIS
@@ -770,7 +778,7 @@ func (r *Reconciler) Reconcile(_ context.Context, req reconcile.Request) (reconc
 		return reconcile.Result{RequeueAfter: veryShortWait}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
 	}
 	// resource exists
-	if !observation.ResourceHasData {
+	if !observation.HasData {
 		// the resource got deleted, so we need to recreate the resource
 		if err := external.Create(externalCtx, managed); err != nil {
 			// We'll hit this condition if the grpc connection fails.
@@ -795,7 +803,7 @@ func (r *Reconciler) Reconcile(_ context.Context, req reconcile.Request) (reconc
 
 	}
 
-	if observation.ResourceUpToDate {
+	if observation.IsUpToDate {
 		// We did not need to create, update, or delete our external resource.
 		// Per the below issue nothing will notify us if and when the external
 		// resource we manage changes, so we requeue a speculative reconcile

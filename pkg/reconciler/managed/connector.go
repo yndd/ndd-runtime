@@ -193,24 +193,24 @@ type ExternalObservation struct {
 	// when the cache is still initializing
 	Ready bool
 	// ActionExecuted the respective action on the resource was executed, so we can validate the status
-	ActionExecuted bool
+	Pending bool
 	// ResourceExists must be true if a corresponding external resource exists
 	// for the managed resource.
-	ResourceExists bool
+	Exists bool
 	// indicates if the resource spec was not successfully applied to the device
 	// unless the resourceSpec changes the transaction would not be successfull
 	// we dont try to reconcile unless the spec changed
-	ResourceFailed bool
+	Failed bool
 	// ResourceHasData can be true when a managed resource is created, but the
 	// device had already data in that resource. The data needs to get aligned
 	// with the intended resource data
-	ResourceHasData bool
+	HasData bool
 	// ResourceUpToDate should be true if the corresponding external resource
 	// appears to be up-to-date with the resourceSpec
-	ResourceUpToDate bool
+	IsUpToDate bool
 	// used for resource Indexes
-	ResourceDeletes []*gnmi.Path
-	ResourceUpdates []*gnmi.Update
+	Deletes []*gnmi.Path
+	Updates []*gnmi.Update
 }
 
 // An ExternalCreation is the result of the creation of an external resource.
