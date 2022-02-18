@@ -756,6 +756,15 @@ func (r *Reconciler) Reconcile(_ context.Context, req reconcile.Request) (reconc
 			}
 		*/
 
+		if err := r.managed.AddFinalizer(ctx, managed); err != nil {
+			// If this is the first time we encounter this issue we'll be requeued
+			// implicitly when we update our status with the new error condition. If
+			// not, we requeue explicitly, which will trigger backoff.
+			log.Debug("Cannot add finalizer", "error", err)
+			managed.SetConditions(nddv1.ReconcileError(err), nddv1.Unknown())
+			return reconcile.Result{Requeue: true}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
+		}
+
 		if err := external.Create(externalCtx, managed, false); err != nil {
 			// We'll hit this condition if the grpc connection fails.
 			// If this is the first time we encounter this
