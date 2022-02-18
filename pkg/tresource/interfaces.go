@@ -40,6 +40,7 @@ type DeviceConditioned interface {
 
 type Generation interface {
 	GetOwnerGeneration() string
+	GetOwnerResourceVersion() string
 }
 
 // An Object is a Kubernetes object.
