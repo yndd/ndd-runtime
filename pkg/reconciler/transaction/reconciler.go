@@ -433,7 +433,7 @@ func (r *Reconciler) Reconcile(_ context.Context, req reconcile.Request) (reconc
 	}
 
 	if reconcileError {
-		tr.SetConditions(nddv1.ReconcileError(errors.Wrap(err, errReconcileConnect)), nddv1.Unavailable())
+		tr.SetConditions(nddv1.ReconcileError(errors.New(errReconcileConnect)), nddv1.Unavailable())
 		return reconcile.Result{RequeueAfter: shortWait}, errors.Wrap(r.client.Status().Update(ctx, tr), errUpdateTransactionStatus)
 	}
 
