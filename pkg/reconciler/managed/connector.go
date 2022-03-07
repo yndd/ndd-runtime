@@ -60,7 +60,7 @@ type ExternalClient interface {
 	// Create an external resource per the specifications of the supplied
 	// Managed resource. Called when Observe reports that the associated
 	// external resource does not exist.
-	Create(ctx context.Context, mg resource.Managed, ignoreTransaction bool) error
+	Create(ctx context.Context, mg resource.Managed, obs ExternalObservation) error
 
 	// Update the external resource represented by the supplied Managed
 	// resource, if necessary. Called unless Observe reports that the
@@ -69,7 +69,7 @@ type ExternalClient interface {
 
 	// Delete the external resource upon deletion of its associated Managed
 	// resource. Called when the managed resource has been deleted.
-	Delete(ctx context.Context, mg resource.Managed) error
+	Delete(ctx context.Context, mg resource.Managed, obs ExternalObservation) error
 
 	// GetTarget returns the targets the resource is assigned assigned to
 	GetTarget() []string
@@ -88,9 +88,9 @@ type ExternalClient interface {
 // interface.
 type ExternalClientFns struct {
 	ObserveFn         func(ctx context.Context, mg resource.Managed) (ExternalObservation, error)
-	CreateFn          func(ctx context.Context, mg resource.Managed) error
-	UpdateFn          func(ctx context.Context, mg resource.Managed) error
-	DeleteFn          func(ctx context.Context, mg resource.Managed) error
+	CreateFn          func(ctx context.Context, mg resource.Managed, obs ExternalObservation) error
+	UpdateFn          func(ctx context.Context, mg resource.Managed, obs ExternalObservation) error
+	DeleteFn          func(ctx context.Context, mg resource.Managed, obs ExternalObservation) error
 	GetTargetFn       func() []string
 	GetConfigFn       func(ctx context.Context) ([]byte, error)
 	GetResourceNameFn func(ctx context.Context, mg resource.Managed, path *gnmi.Path) (string, error)
@@ -105,20 +105,20 @@ func (e ExternalClientFns) Observe(ctx context.Context, mg resource.Managed) (Ex
 
 // Create an external resource per the specifications of the supplied Managed
 // resource.
-func (e ExternalClientFns) Create(ctx context.Context, mg resource.Managed) error {
-	return e.CreateFn(ctx, mg)
+func (e ExternalClientFns) Create(ctx context.Context, mg resource.Managed, obs ExternalObservation) error {
+	return e.CreateFn(ctx, mg, obs)
 }
 
 // Update the external resource represented by the supplied Managed resource, if
 // necessary.
-func (e ExternalClientFns) Update(ctx context.Context, mg resource.Managed) error {
-	return e.UpdateFn(ctx, mg)
+func (e ExternalClientFns) Update(ctx context.Context, mg resource.Managed, obs ExternalObservation) error {
+	return e.UpdateFn(ctx, mg, obs)
 }
 
 // Delete the external resource upon deletion of its associated Managed
 // resource.
-func (e ExternalClientFns) Delete(ctx context.Context, mg resource.Managed) error {
-	return e.DeleteFn(ctx, mg)
+func (e ExternalClientFns) Delete(ctx context.Context, mg resource.Managed, obs ExternalObservation) error {
+	return e.DeleteFn(ctx, mg, obs)
 }
 
 // GetTarget return the real target for the external resource
@@ -156,7 +156,7 @@ func (c *NopClient) Observe(ctx context.Context, mg resource.Managed) (ExternalO
 }
 
 // Create does nothing. It returns an empty ExternalCreation and no error.
-func (c *NopClient) Create(ctx context.Context, mg resource.Managed, ignoreTransaction bool) error {
+func (c *NopClient) Create(ctx context.Context, mg resource.Managed, obs ExternalObservation) error {
 	return nil
 }
 
@@ -166,7 +166,9 @@ func (c *NopClient) Update(ctx context.Context, mg resource.Managed, obs Externa
 }
 
 // Delete does nothing. It never returns an error.
-func (c *NopClient) Delete(ctx context.Context, mg resource.Managed) error { return nil }
+func (c *NopClient) Delete(ctx context.Context, mg resource.Managed, obs ExternalObservation) error {
+	return nil
+}
 
 // GetTarget return on empty string list
 func (c *NopClient) GetTarget() []string { return make([]string, 0) }
@@ -208,7 +210,9 @@ type ExternalObservation struct {
 	// ResourceUpToDate should be true if the corresponding external resource
 	// appears to be up-to-date with the resourceSpec
 	IsUpToDate bool
-	// used for resource Indexes
+	// determines the path that are being monitored to validate if the resource is up to date
+	Paths []*gnmi.Path
+	// when the resource is not up to date these 2 parameter determine what to do to realign the resource to the spec
 	Deletes []*gnmi.Path
 	Updates []*gnmi.Update
 }
