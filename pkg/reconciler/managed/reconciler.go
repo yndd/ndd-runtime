@@ -22,10 +22,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/openconfig/gnmi/proto/gnmi"
 	nddv1 "github.com/yndd/ndd-runtime/apis/common/v1"
 	"github.com/yndd/ndd-yang/pkg/parser"
-	"github.com/yndd/ndd-yang/pkg/yparser"
 
 	"github.com/pkg/errors"
 	"github.com/yndd/ndd-runtime/pkg/event"
@@ -33,9 +31,7 @@ import (
 	"github.com/yndd/ndd-runtime/pkg/meta"
 	"github.com/yndd/ndd-runtime/pkg/resource"
 	"github.com/yndd/nddp-system/pkg/gvkresource"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -54,39 +50,33 @@ const (
 	defaultpollInterval = 1 * time.Minute
 
 	// errors
-	errGetManaged                        = "cannot get managed resource"
-	errUpdateManagedAfterCreate          = "cannot update managed resource. this may have resulted in a leaked external resource"
-	errReconcileConnect                  = "connect failed"
-	errReconcileObserve                  = "observe failed"
-	errReconcileCreate                   = "create failed"
-	errReconcileUpdate                   = "update failed"
-	errReconcileDelete                   = "delete failed"
-	errReconcileGetConfig                = "get config failed"
-	errReconcileGetResourceName          = "get resource name failed"
-	errReconcileValidateLeafRef          = "leafref validation failed"
-	errReconcileValidateParentDependency = "parent dependency validation failed"
-	errReconcileValidateResourceIndexes  = "resource indexes validation failed"
-	errUpdateManagedStatus               = "cannot update status of the managed resource"
+	errGetManaged                 = "cannot get managed resource"
+	errUpdateManagedAfterCreate   = "cannot update managed resource. this may have resulted in a leaked external resource"
+	errReconcileConnect           = "connect failed"
+	errReconcileObserve           = "observe failed"
+	errReconcileCreate            = "create failed"
+	errReconcileUpdate            = "update failed"
+	errReconcileDelete            = "delete failed"
+	errReconcileGetConfig         = "get config failed"
+	errReconcileGetResourceList   = "get resource list failed"
+	errReconcileValidateRootPaths = "rootPaths validation failed"
+	errUpdateManagedStatus        = "cannot update status of the managed resource"
 
 	// Event reasons.
-	reasonCannotConnect                  event.Reason = "CannotConnectToProvider"
-	reasonCannotInitialize               event.Reason = "CannotInitializeManagedResource"
-	reasonCannotResolveRefs              event.Reason = "CannotResolveResourceReferences"
-	reasonCannotObserve                  event.Reason = "CannotObserveExternalResource"
-	reasonCannotCreate                   event.Reason = "CannotCreateExternalResource"
-	reasonCannotDelete                   event.Reason = "CannotDeleteExternalResource"
-	reasonCannotPublish                  event.Reason = "CannotPublishConnectionDetails"
-	reasonCannotUnpublish                event.Reason = "CannotUnpublishConnectionDetails"
-	reasonCannotUpdate                   event.Reason = "CannotUpdateExternalResource"
-	reasonCannotUpdateManaged            event.Reason = "CannotUpdateManagedResource"
-	reasonCannotGetConfig                event.Reason = "CannotGetConfigExternalResource"
-	reasonCannotGetResourceName          event.Reason = "CannotGetresourceNameExternalResource"
-	reasonCannotValidateLeafRef          event.Reason = "CannotValidateLeafRef"
-	reasonCannotValidateParentDependency event.Reason = "CannotValidateParentDependency"
-	reasonCannotGetValidTarget           event.Reason = "CannotGetValidTarget"
-	reasonValidateLeafRefFailed          event.Reason = "ValidatelLeafRefFailed"
-	reasonValidateParentDependencyFailed event.Reason = "ValidateParentDependencyFailed"
-	reasonCannotValidateResourceIndexes  event.Reason = "CannotValidateResourceIndexes"
+	reasonCannotConnect           event.Reason = "CannotConnectToProvider"
+	reasonCannotInitialize        event.Reason = "CannotInitializeManagedResource"
+	reasonCannotResolveRefs       event.Reason = "CannotResolveResourceReferences"
+	reasonCannotObserve           event.Reason = "CannotObserveExternalResource"
+	reasonCannotCreate            event.Reason = "CannotCreateExternalResource"
+	reasonCannotDelete            event.Reason = "CannotDeleteExternalResource"
+	reasonCannotPublish           event.Reason = "CannotPublishConnectionDetails"
+	reasonCannotUnpublish         event.Reason = "CannotUnpublishConnectionDetails"
+	reasonCannotUpdate            event.Reason = "CannotUpdateExternalResource"
+	reasonCannotUpdateManaged     event.Reason = "CannotUpdateManagedResource"
+	reasonCannotGetResourceList   event.Reason = "CannotGetresourceList"
+	reasonCannotGetValideTarget   event.Reason = "CannotGetValideTarget"
+	reasonCannotValidateRootPaths event.Reason = "CannotValidateRootPaths"
+	reasonValidateRootPathsFailed event.Reason = "reasonValidateRootPathsFailed"
 
 	reasonDeleted event.Reason = "DeletedExternalResource"
 	reasonCreated event.Reason = "CreatedExternalResource"
@@ -297,30 +287,6 @@ func (r *Reconciler) Reconcile(_ context.Context, req reconcile.Request) (reconc
 		log = log.WithValues("deletion-timestamp", managed.GetDeletionTimestamp())
 		managed.SetConditions(nddv1.Deleting())
 
-
-		// check if the resource has external leafref dependencies, if so it cannot be deleted
-		hasOtherFinalizer, err := r.managed.HasOtherFinalizer(ctx, managed)
-		if err != nil {
-			log.Debug("Cannot get managed resource finalizer", "error", err)
-			managed.SetConditions(nddv1.ReconcileError(err), nddv1.Unknown())
-			return reconcile.Result{Requeue: true}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
-		}
-
-		// if other finalizer exists we cananot delete the resource and we have to requeue until the
-		// resource get deleted
-		if hasOtherFinalizer {
-			return reconcile.Result{RequeueAfter: veryShortWait}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
-		}
-
-		// remove the finalizer from the external resources before deleting the finalizer from the local resource
-		for _, externalResourceName := range managed.GetExternalLeafRefs() {
-			// for all external resource name that were resolved we need to remove the finalizer from the external resource
-			if err := r.HandleExternalResourceFinalizer(ctx, FinalizerOperationRemove, externalResourceName, managed); err != nil {
-				managed.SetConditions(nddv1.ReconcileError(err), nddv1.Unknown())
-				return reconcile.Result{Requeue: true}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
-			}
-		}
-
 		if err := r.managed.RemoveFinalizer(ctx, managed); err != nil {
 			// If this is the first time we encounter this issue we'll be
 			// requeued implicitly when we update our status with the new error
@@ -346,27 +312,6 @@ func (r *Reconciler) Reconcile(_ context.Context, req reconcile.Request) (reconc
 			// during target delete/create
 			// however if the resource has external leafref dependencies, we cannot delete
 			// resource
-			hasOtherFinalizer, err := r.managed.HasOtherFinalizer(ctx, managed)
-			if err != nil {
-				log.Debug("Cannot get managed resource finalizer", "error", err)
-				managed.SetConditions(nddv1.ReconcileError(err), nddv1.Unknown())
-				return reconcile.Result{Requeue: true}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
-			}
-
-			// if other finalizer exists we cananot delete the resource and we have to requeue until the
-			// resource get deleted
-			if hasOtherFinalizer {
-				return reconcile.Result{RequeueAfter: veryShortWait}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
-			}
-
-			// remove the finalizer from the external resources before deleting the finalizer from the local resource
-			for _, externalResourceName := range managed.GetExternalLeafRefs() {
-				// for all external resource name that were resolved we need to remove the finalizer from the external resource
-				if err := r.HandleExternalResourceFinalizer(ctx, FinalizerOperationRemove, externalResourceName, managed); err != nil {
-					managed.SetConditions(nddv1.ReconcileError(err), nddv1.Unknown())
-					return reconcile.Result{Requeue: true}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
-				}
-			}
 
 			if err := r.managed.RemoveFinalizer(ctx, managed); err != nil {
 				// If this is the first time we encounter this issue we'll be
@@ -387,15 +332,13 @@ func (r *Reconciler) Reconcile(_ context.Context, req reconcile.Request) (reconc
 		}
 		// Set validation status to unknown if the target is not found
 		managed.SetConditions(nddv1.ParentValidationUnknown(), nddv1.LeafRefValidationUnknown(), nddv1.LeafRefValidationUnknown())
-		// set empty target
-		managed.SetTarget(make([]string, 0))
 		// if the target was not found it means the network node is not defined or not in a status
 		// to handle the reconciliation. A reconcilation retry will be triggered
 		if strings.Contains(fmt.Sprintf("%s", err), "not found") ||
 			strings.Contains(fmt.Sprintf("%s", err), "not configured") ||
 			strings.Contains(fmt.Sprintf("%s", err), "not ready") {
 			//log.Debug("network node not found")
-			record.Event(managed, event.Warning(reasonCannotGetValidTarget, err))
+			record.Event(managed, event.Warning(reasonCannotGetValideTarget, err))
 			managed.SetConditions(nddv1.TargetNotFound(), nddv1.Unavailable(), nddv1.ReconcileSuccess())
 			return reconcile.Result{RequeueAfter: shortWait}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
 		}
@@ -416,7 +359,26 @@ func (r *Reconciler) Reconcile(_ context.Context, req reconcile.Request) (reconc
 	// given we can connect to the network node device driver, the target is found
 	// update codition and update the status field
 	managed.SetConditions(nddv1.TargetFound())
-	managed.SetTarget(external.GetTarget())
+
+	resourceList, err := external.GetResourceList(externalCtx, managed)
+	if err != nil {
+		log.Debug("Cannot get resourceList", "error", err)
+		record.Event(managed, event.Warning(reasonCannotGetResourceList, err))
+		managed.SetConditions(nddv1.ReconcileError(errors.Wrap(err, errReconcileGetResourceList)), nddv1.Unknown())
+		return reconcile.Result{Requeue: true}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
+	}
+
+	validateRootPathsObservation, err := r.validator.ValidateRootPaths(ctx, managed, resourceList)
+	if err != nil {
+		log.Debug("Cannot validate rootPaths", "error", err)
+		record.Event(managed, event.Warning(reasonCannotValidateRootPaths, err))
+		managed.SetConditions(nddv1.ReconcileError(errors.Wrap(err, errReconcileValidateRootPaths)), nddv1.Unknown())
+		return reconcile.Result{Requeue: true}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
+	}
+
+	// TODO if changed -> delete the paths that are no longer needed
+	managed.SetRootPaths(validateRootPathsObservation.RootPaths)
+	managed.SetHierPaths(validateRootPathsObservation.HierPaths)
 
 	observation, err := external.Observe(externalCtx, managed)
 	log.Debug("Observation", "Observation", observation, "Transaction", gvkresource.GetTransaction(managed))
@@ -458,20 +420,6 @@ func (r *Reconciler) Reconcile(_ context.Context, req reconcile.Request) (reconc
 			return reconcile.Result{RequeueAfter: veryShortWait}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
 		}
 
-		// if the resource has external leafref dependencies, we cannot delete the
-		// resource
-		hasOtherFinalizer, err := r.managed.HasOtherFinalizer(ctx, managed)
-		if err != nil {
-			log.Debug("Cannot get managed resource finalizer", "error", err)
-			managed.SetConditions(nddv1.ReconcileError(err), nddv1.Unknown())
-			return reconcile.Result{Requeue: true}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
-		}
-		// if other finalizer exists we cananot delete the resource and we have to requeue until the
-		// resource get deleted
-		if hasOtherFinalizer {
-			return reconcile.Result{RequeueAfter: veryShortWait}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
-		}
-
 		// We'll only reach this point if deletion policy is not orphan, so we
 		// are safe to call external deletion if external resource exists or the
 		// resource has data
@@ -500,15 +448,6 @@ func (r *Reconciler) Reconcile(_ context.Context, req reconcile.Request) (reconc
 			record.Event(managed, event.Normal(reasonDeleted, "Successfully requested deletion of external resource"))
 			managed.SetConditions(nddv1.ReconcileSuccess())
 			return reconcile.Result{RequeueAfter: veryShortWait}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
-		}
-
-		// remove the finalizer from the external resources before deleting the finalizer from the local resource
-		for _, externalResourceName := range managed.GetExternalLeafRefs() {
-			// for all external resource name that were resolved we need to remove the finalizer from the external resource
-			if err := r.HandleExternalResourceFinalizer(ctx, FinalizerOperationRemove, externalResourceName, managed); err != nil {
-				managed.SetConditions(nddv1.ReconcileError(err), nddv1.Unknown())
-				return reconcile.Result{Requeue: true}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
-			}
 		}
 
 		if err := r.managed.RemoveFinalizer(ctx, managed); err != nil {
@@ -542,199 +481,6 @@ func (r *Reconciler) Reconcile(_ context.Context, req reconcile.Request) (reconc
 		log.Debug("External resource cache failed", "requeue-after", time.Now().Add(shortWait))
 		managed.SetConditions(nddv1.Failed())
 		return reconcile.Result{RequeueAfter: shortWait}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
-	}
-
-	// for transactions we dont do validations
-	// when the resource is up to date we dont do validations
-	if gvkresource.GetTransaction(managed) == gvkresource.TransactionNone && !observation.IsUpToDate {
-		// get the full configuration of the network node in order to do leafref and parent validation
-
-		log.Debug("Validation", "observation", observation, "transaction", gvkresource.GetTransaction(managed))
-		cfg, err := external.GetConfig(externalCtx, managed)
-		if err != nil {
-			log.Debug("Cannot get network node configuration", "error", err)
-			record.Event(managed, event.Warning(reasonCannotGetConfig, err))
-			managed.SetConditions(nddv1.ReconcileError(errors.Wrap(err, errReconcileGetConfig)), nddv1.Unknown())
-			return reconcile.Result{Requeue: true}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
-		}
-
-		parentDependencyObservation, err := r.validator.ValidateParentDependency(ctx, managed, cfg)
-		if err != nil {
-			if observation.Exists {
-				if err := external.Delete(externalCtx, managed, observation); err != nil {
-					// We'll hit this condition if we can't delete our external resource
-					log.Debug("Cannot delete external resource", "error", err)
-					record.Event(managed, event.Warning(reasonCannotDelete, err))
-					managed.SetConditions(nddv1.ReconcileError(errors.Wrap(err, errReconcileDelete)), nddv1.Unknown())
-					return reconcile.Result{Requeue: true}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
-				}
-			}
-			log.Debug("Cannot validate parent dependency", "error", err)
-			record.Event(managed, event.Warning(reasonCannotValidateParentDependency, err))
-			managed.SetConditions(nddv1.ReconcileError(errors.Wrap(err, errReconcileValidateParentDependency)), nddv1.Unknown())
-			return reconcile.Result{Requeue: true}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
-		}
-		if !parentDependencyObservation.Success {
-			if observation.Exists {
-				if err := external.Delete(externalCtx, managed, observation); err != nil {
-					// We'll hit this condition if we can't delete our external resource
-					log.Debug("Cannot delete external resource", "error", err)
-					record.Event(managed, event.Warning(reasonCannotDelete, err))
-					managed.SetConditions(nddv1.ReconcileError(errors.Wrap(err, errReconcileDelete)), nddv1.Unknown())
-					return reconcile.Result{Requeue: true}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
-				}
-			}
-			log.Debug("parent dependency validation failed", "error", errors.New("validation failed"))
-			record.Event(managed, event.Warning(reasonValidateParentDependencyFailed, errors.New("validation failed")))
-			managed.SetConditions(nddv1.ParentValidationFailure(), nddv1.Unavailable(), nddv1.ReconcileSuccess())
-			return reconcile.Result{RequeueAfter: veryShortWait}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
-		}
-		managed.SetConditions(nddv1.ParentValidationSuccess())
-
-		leafrefObservation, err := r.validator.ValidateLeafRef(ctx, managed, cfg)
-		if err != nil {
-			// TBD it can be that a change results in a deletion but the resource itself is depending on another leafref
-			// so this will fail
-			// TBD COMMENTED FOR NOW, BUT THIS WOULD ONLY HAPPEN WHEN WE HAVE A DEPENDENCY WITH AN UMR ABD IT GOT DELETED
-			/*
-				if observation.ResourceExists {
-
-					if err := external.Delete(externalCtx, managed); err != nil {
-						// We'll hit this condition if we can't delete our external resource
-						log.Debug("Cannot delete external resource", "error", err)
-						record.Event(managed, event.Warning(reasonCannotDelete, err))
-						managed.SetConditions(nddv1.ReconcileError(errors.Wrap(err, errReconcileDelete)), nddv1.Unknown())
-						return reconcile.Result{Requeue: true}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
-					}
-
-				}
-			*/
-			log.Debug("Cannot validate external leafref", "error", err)
-			record.Event(managed, event.Warning(reasonCannotValidateLeafRef, err))
-			managed.SetConditions(nddv1.ReconcileError(errors.Wrap(err, errReconcileValidateLeafRef)), nddv1.Unknown())
-			return reconcile.Result{Requeue: true}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
-		}
-		if !leafrefObservation.Success {
-			// TBD COMMENTED FOR NOW, BUT THIS WOULD ONLY HAPPEN WHEN WE HAVE A DEPENDENCY WITH AN UMR ABD IT GOT DELETED
-			/*
-				if observation.ResourceExists {
-						if err := external.Delete(externalCtx, managed); err != nil {
-							// We'll hit this condition if we can't delete our external resource
-							log.Debug("Cannot delete external resource", "error", err)
-							record.Event(managed, event.Warning(reasonCannotDelete, err))
-							managed.SetConditions(nddv1.ReconcileError(errors.Wrap(err, errReconcileDelete)), nddv1.Unknown())
-							return reconcile.Result{Requeue: true}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
-						}
-
-				}
-			*/
-			log.Debug("external leafref validation failed", "error", errors.New("validation failed"))
-			record.Event(managed, event.Warning(reasonValidateLeafRefFailed, errors.New("validation failed")))
-			managed.SetConditions(nddv1.LeafRefValidationFailure(), nddv1.Unavailable(), nddv1.ReconcileSuccess())
-			return reconcile.Result{RequeueAfter: veryShortWait}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
-		}
-
-		//log.Debug("External Leafref Validation", "resolved leafref", externalLeafrefObservation.ResolvedLeafRefs)
-		// get the external resources that match the external leafRefs
-		externalResourceNames := make([]string, 0)
-		for _, resolvedLeafRef := range leafrefObservation.ResolvedLeafRefs {
-			// the external finalizer handling is only required for external leafrefs
-			if resolvedLeafRef.External {
-				//log.WithValues("resolvedLeafRef", resolvedLeafRef)
-
-				// for some special cases it might be that the remotePaths or multiple iso 1.
-				// E.g. interface/subinterface or tunnel/vxlan-interface would be split in 2 paths
-				remotePaths := yparser.GetRemotePathsFromResolvedLeafRef(resolvedLeafRef)
-
-				for _, remotePath := range remotePaths {
-					// get the resourceName from the device driver that matches the remotePath in the resolved LeafaRef
-					externalResourceName, err := external.GetResourceName(ctx, managed, remotePath)
-					if err != nil {
-						log.Debug("Cannot get resource name", "error", err)
-						record.Event(managed, event.Warning(reasonCannotGetResourceName, err))
-						managed.SetConditions(nddv1.ReconcileError(errors.Wrap(err, errReconcileGetResourceName)), nddv1.Unknown())
-						return reconcile.Result{Requeue: true}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
-					}
-					//log.Debug("External resource Name", "externalResourceName", externalResourceName, "remotePath", r.parser.GnmiPathToXPath(remotePath, true))
-					// only append unique externalResourceName if the external resource is managed by the ndd provider
-					if externalResourceName != "" {
-						found := false
-						for _, extResName := range externalResourceNames {
-							// only append the externalResourceName for objects that are managed by the provider
-							if extResName == externalResourceName {
-								found = true
-							}
-						}
-						if !found {
-							externalResourceNames = append(externalResourceNames, externalResourceName)
-						}
-					} else {
-						log.Debug("this is an external leafref of an umanaged resource of ndd, deletion of the remote leafRef will fail",
-							"path", r.parser.GnmiPathToXPath(resolvedLeafRef.RemotePath, true))
-					}
-				}
-			}
-		}
-
-		//log.Debug("leafref Validation", "externalResourceNames", externalResourceNames)
-		for _, externalResourceName := range externalResourceNames {
-			// for all external resolved names we need to add a finalizer to the external resource
-			if err := r.HandleExternalResourceFinalizer(ctx, FinalizerOperationAdd, externalResourceName, managed); err != nil {
-				managed.SetConditions(nddv1.ReconcileError(err), nddv1.Unknown())
-				return reconcile.Result{Requeue: true}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
-			}
-		}
-		//log.Debug("External Leafref Validation", "externalResourceNames", externalResourceNames)
-
-		managed.SetConditions(nddv1.LeafRefValidationSuccess())
-		// we need to check the delta between the existing External LeafRefs and the new LeaRefs
-		// if there is a deletion we need remove the external finalizer of the object
-		externalResourceNamesDeletes := FindExternalResourceNameDelta(managed.GetExternalLeafRefs(), externalResourceNames)
-		for _, externalResourceName := range externalResourceNamesDeletes {
-			// for all external resource name that are no longer resolved we need to remove the finalizer from the external resource
-			if err := r.HandleExternalResourceFinalizer(ctx, FinalizerOperationRemove, externalResourceName, managed); err != nil {
-				managed.SetConditions(nddv1.ReconcileError(err), nddv1.Unknown())
-				return reconcile.Result{Requeue: true}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
-			}
-		}
-		// Update the External LeafRefs in the Status field
-		managed.SetExternalLeafRefs(externalResourceNames)
-
-		// Validate if the resourceIndexes changed or not
-		// if they changed we should delete the original resource
-		resourceIndexesObservation, err := r.validator.ValidateResourceIndexes(ctx, managed)
-		if err != nil {
-			log.Debug("Cannot validate resource indexes", "error", err)
-			record.Event(managed, event.Warning(reasonCannotValidateResourceIndexes, err))
-			managed.SetConditions(nddv1.ReconcileError(errors.Wrap(err, errReconcileValidateResourceIndexes)), nddv1.Unknown())
-			return reconcile.Result{Requeue: true}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
-		}
-		// if the resource indexes got deleted we need to delete the resources
-		if resourceIndexesObservation.Changed {
-			// we reuse the observation object
-			observation := ExternalObservation{
-				Deletes: resourceIndexesObservation.ResourceDeletes,
-				Updates: make([]*gnmi.Update, 0), // no updates are necessary here
-			}
-			if err := external.Update(externalCtx, managed, observation); err != nil {
-				// We'll hit this condition if we can't update our external resource,
-				log.Debug("Cannot update external resource")
-				record.Event(managed, event.Warning(reasonCannotUpdate, err))
-				managed.SetConditions(nddv1.ReconcileError(errors.Wrap(err, errReconcileUpdate)), nddv1.Unknown())
-				return reconcile.Result{Requeue: true}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
-			}
-		}
-		// update the resourceIndexes, so we can compare the new data in the next reconcile
-		managed.SetResourceIndexes(resourceIndexesObservation.ResourceIndexes)
-
-		if err := r.managed.AddFinalizer(ctx, managed); err != nil {
-			// If this is the first time we encounter this issue we'll be requeued
-			// implicitly when we update our status with the new error condition. If
-			// not, we requeue explicitly, which will trigger backoff.
-			log.Debug("Cannot add finalizer", "error", err)
-			managed.SetConditions(nddv1.ReconcileError(err), nddv1.Unknown())
-			return reconcile.Result{Requeue: true}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
-		}
 	}
 
 	//log.Debug("Observation", "observation", observation)
@@ -842,72 +588,4 @@ func (r *Reconciler) Reconcile(_ context.Context, req reconcile.Request) (reconc
 	record.Event(managed, event.Normal(reasonUpdated, "Successfully requested update of external resource"))
 	managed.SetConditions(nddv1.ReconcileSuccess(), nddv1.Updating())
 	return reconcile.Result{RequeueAfter: veryShortWait}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
-}
-
-func FindExternalResourceNameDelta(oldSlice, newSlice []string) []string {
-	// we run over the old Slice and see if all the elements exists
-	//in the new Slice if not we need to add the element to the slice
-	returnSlice := make([]string, 0)
-	for _, oldName := range oldSlice {
-		found := false
-		for _, newName := range newSlice {
-			if oldName == newName {
-				found = true
-				break
-			}
-		}
-		if !found {
-			returnSlice = append(returnSlice, oldName)
-		}
-	}
-	return returnSlice
-}
-
-// A OperationType represents an operatio on a JSON resource
-type FinalizerOperation string
-
-// Condition Kinds.
-const (
-	// add
-	FinalizerOperationAdd FinalizerOperation = "Add"
-	// remove
-	FinalizerOperationRemove FinalizerOperation = "Remove"
-)
-
-func (r *Reconciler) HandleExternalResourceFinalizer(ctx context.Context, operation FinalizerOperation, externalResourceName string, managed resource.Managed) error {
-	gvk, err := gvkresource.String2Gvk(externalResourceName)
-	if err != nil {
-		r.log.Debug("Cannot get gvk", "error", err, "externalResourceName", externalResourceName, "gvk", gvk)
-		return errors.Wrap(err, fmt.Sprintf("Cannot get gvk with externalResourceName %s, gvk: %v", externalResourceName, gvk))
-	}
-
-	emr := &unstructured.Unstructured{}
-	emr.SetGroupVersionKind(schema.GroupVersionKind{
-		Group:   gvk.Group,
-		Kind:    gvk.Kind,
-		Version: gvk.Version,
-	})
-
-	key := types.NamespacedName{
-		Namespace: gvk.NameSpace,
-		Name:      gvk.Name,
-	}
-	if err := r.client.Get(ctx, key, emr); err != nil {
-		r.log.Debug("Cannot get external resource", "error", err, "externalResourceName", externalResourceName, "gvk", gvk)
-		return errors.Wrap(err, fmt.Sprintf("Cannot get external resource with externalResourceName %s, gvk: %v", externalResourceName, gvk))
-
-	}
-	switch operation {
-	case FinalizerOperationAdd:
-		if err := r.managed.AddFinalizerString(ctx, emr, managed.GetName()); err != nil {
-			r.log.Debug("Cannot remove finalizer from external resource", "error", err, "externalResourceName", externalResourceName, "gvk", gvk)
-			return errors.Wrap(err, fmt.Sprintf("Cannot remove finalizer from external resource with externalResourceName %s, gvk: %v", externalResourceName, gvk))
-		}
-	case FinalizerOperationRemove:
-		if err := r.managed.RemoveFinalizerString(ctx, emr, managed.GetName()); err != nil {
-			r.log.Debug("Cannot remove finalizer from external resource", "error", err, "externalResourceName", externalResourceName, "gvk", gvk)
-			return errors.Wrap(err, fmt.Sprintf("Cannot remove finalizer from external resource with externalResourceName %s, gvk: %v", externalResourceName, gvk))
-		}
-	}
-	return nil
 }

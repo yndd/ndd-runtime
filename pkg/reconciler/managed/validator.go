@@ -21,63 +21,30 @@ import (
 
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/yndd/ndd-runtime/pkg/resource"
-	"github.com/yndd/ndd-yang/pkg/leafref"
+	"github.com/yndd/nddp-system/pkg/ygotnddp"
 )
 
 type Validator interface {
-	ValidateLeafRef(ctx context.Context, mg resource.Managed, cfg []byte) (ValidateLeafRefObservation, error)
-
-	ValidateParentDependency(ctx context.Context, mg resource.Managed, cfg []byte) (ValidateParentDependencyObservation, error)
-
-	ValidateResourceIndexes(ctx context.Context, mg resource.Managed) (ValidateResourceIndexesObservation, error)
+	ValidateRootPaths(ctx context.Context, mg resource.Managed, resourceList map[string]*ygotnddp.NddpSystem_Gvk) (ValidateRootPathsObservation, error)
 }
 
 type ValidatorFn struct {
-	ValidateLeafRefFn          func(ctx context.Context, mg resource.Managed, cfg []byte) (ValidateLeafRefObservation, error)
-	ValidateParentDependencyFn func(ctx context.Context, mg resource.Managed, cfg []byte) (ValidateParentDependencyObservation, error)
-	ValidateResourceIndexesFn  func(ctx context.Context, mg resource.Managed) (ValidateResourceIndexesObservation, error)
+	ValidateRootPathsFn func(ctx context.Context, mg resource.Managed, resourceList map[string]*ygotnddp.NddpSystem_Gvk) (ValidateRootPathsObservation, error)
 }
 
-func (e ValidatorFn) ValidateLeafRef(ctx context.Context, mg resource.Managed, cfg []byte) (ValidateLeafRefObservation, error) {
-	return e.ValidateLeafRefFn(ctx, mg, cfg)
-}
-
-func (e ValidatorFn) ValidateParentDependency(ctx context.Context, mg resource.Managed, cfg []byte) (ValidateParentDependencyObservation, error) {
-	return e.ValidateParentDependencyFn(ctx, mg, cfg)
-}
-
-func (e ValidatorFn) ValidateResourceIndexes(ctx context.Context, mg resource.Managed) (ValidateResourceIndexesObservation, error) {
-	return e.ValidateResourceIndexesFn(ctx, mg)
+func (e ValidatorFn) ValidateRootPaths(ctx context.Context, mg resource.Managed, resourceList map[string]*ygotnddp.NddpSystem_Gvk) (ValidateRootPathsObservation, error) {
+	return e.ValidateRootPathsFn(ctx, mg, resourceList)
 }
 
 type NopValidator struct{}
 
-func (e *NopValidator) ValidateLeafRef(ctx context.Context, mg resource.Managed, cfg []byte) (ValidateLeafRefObservation, error) {
-	return ValidateLeafRefObservation{}, nil
+func (e *NopValidator) ValidateRootPaths(ctx context.Context, mg resource.Managed, resourceList map[string]*ygotnddp.NddpSystem_Gvk) (ValidateRootPathsObservation, error) {
+	return ValidateRootPathsObservation{}, nil
 }
 
-func (e *NopValidator) ValidateParentDependency(ctx context.Context, mg resource.Managed, cfg []byte) (ValidateParentDependencyObservation, error) {
-	return ValidateParentDependencyObservation{}, nil
-}
-
-func (e *NopValidator) ValidateResourceIndexes(ctx context.Context, mg resource.Managed) (ValidateResourceIndexesObservation, error) {
-	return ValidateResourceIndexesObservation{}, nil
-}
-
-type ValidateLeafRefObservation struct {
-	Success bool
-
-	ResolvedLeafRefs []*leafref.ResolvedLeafRef
-}
-
-type ValidateParentDependencyObservation struct {
-	Success bool
-
-	ResolvedLeafRefs []*leafref.ResolvedLeafRef
-}
-
-type ValidateResourceIndexesObservation struct {
-	Changed         bool
-	ResourceDeletes []*gnmi.Path
-	ResourceIndexes map[string]string
+type ValidateRootPathsObservation struct {
+	Changed     bool
+	RootPaths   []string
+	HierPaths   map[string][]string
+	DeletePaths []*gnmi.Path
 }

@@ -23,7 +23,6 @@ import (
 
 	nddv1 "github.com/yndd/ndd-runtime/apis/common/v1"
 	systemv1alpha1 "github.com/yndd/nddp-system/apis/system/v1alpha1"
-	"github.com/yndd/nddp-system/pkg/gvkresource"
 
 	"github.com/pkg/errors"
 	"github.com/yndd/ndd-runtime/pkg/event"
@@ -476,29 +475,31 @@ func (r *Reconciler) validateResourcesPerTransactionInCache(tr tresource.Transac
 		return false, gvkList, nil
 	}
 
-	for _, gvkResource := range gvkresourceList {
-		gvk, err := gvkresource.String2Gvk(gvkResource.Name)
-		if err != nil {
-			r.log.Debug("Gvk Resource Failed", "error", err)
-			return false, gvkList, err
-		}
-		r.log.Debug("Transaction information",
-			"device", deviceName,
-			"gvkResource.Transaction", gvkResource.Transaction,
-			"transactionName", tr.GetName(),
-			"gvkResource.Transactiongeneration", gvkResource.Transactiongeneration,
-			"transactionOwnerGeneration", tr.GetOwnerGeneration(),
-			"gvk.NameSpace", gvk.NameSpace,
-			"transactionNamespace", tr.GetNamespace(),
-		)
-		if gvkResource.Transaction == tr.GetName() && gvkResource.Transactiongeneration == tr.GetOwnerGeneration() && gvk.NameSpace == tr.GetNamespace() {
-			// check the kind
-			if deviceCrNames, ok := deviceCrs[gvk.Kind]; ok {
-				delete(deviceCrNames, gvk.Name)
-				gvkList = append(gvkList, gvkResource.Name)
+	/*
+		for _, gvkResource := range gvkresourceList {
+			gvk, err := gvkresource.String2Gvk(gvkResource.Name)
+			if err != nil {
+				r.log.Debug("Gvk Resource Failed", "error", err)
+				return false, gvkList, err
+			}
+			r.log.Debug("Transaction information",
+				"device", deviceName,
+				"gvkResource.Transaction", gvkResource.Transaction,
+				"transactionName", tr.GetName(),
+				"gvkResource.Transactiongeneration", gvkResource.Transactiongeneration,
+				"transactionOwnerGeneration", tr.GetOwnerGeneration(),
+				"gvk.NameSpace", gvk.NameSpace,
+				"transactionNamespace", tr.GetNamespace(),
+			)
+			if gvkResource.Transaction == tr.GetName() && gvkResource.Transactiongeneration == tr.GetOwnerGeneration() && gvk.NameSpace == tr.GetNamespace() {
+				// check the kind
+				if deviceCrNames, ok := deviceCrs[gvk.Kind]; ok {
+					delete(deviceCrNames, gvk.Name)
+					gvkList = append(gvkList, gvkResource.Name)
+				}
 			}
 		}
-	}
+	*/
 
 	// when the transaction list is complete all the deviceCrPerKind entries should be 0
 	for deviceKind, deviceCrPerKind := range deviceCrs {

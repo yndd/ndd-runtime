@@ -177,21 +177,24 @@ func (in *ResourceSpec) DeepCopy() *ResourceSpec {
 func (in *ResourceStatus) DeepCopyInto(out *ResourceStatus) {
 	*out = *in
 	in.ConditionedStatus.DeepCopyInto(&out.ConditionedStatus)
-	if in.Target != nil {
-		in, out := &in.Target, &out.Target
+	if in.RootPaths != nil {
+		in, out := &in.RootPaths, &out.RootPaths
 		*out = make([]string, len(*in))
 		copy(*out, *in)
 	}
-	if in.ExternalLeafRefs != nil {
-		in, out := &in.ExternalLeafRefs, &out.ExternalLeafRefs
-		*out = make([]string, len(*in))
-		copy(*out, *in)
-	}
-	if in.ResourceIndexes != nil {
-		in, out := &in.ResourceIndexes, &out.ResourceIndexes
-		*out = make(map[string]string, len(*in))
+	if in.HierPaths != nil {
+		in, out := &in.HierPaths, &out.HierPaths
+		*out = make(map[string][]string, len(*in))
 		for key, val := range *in {
-			(*out)[key] = val
+			var outVal []string
+			if val == nil {
+				(*out)[key] = nil
+			} else {
+				in, out := &val, &outVal
+				*out = make([]string, len(*in))
+				copy(*out, *in)
+			}
+			(*out)[key] = outVal
 		}
 	}
 }

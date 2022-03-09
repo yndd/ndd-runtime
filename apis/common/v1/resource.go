@@ -95,12 +95,10 @@ type ResourceSpec struct {
 type ResourceStatus struct {
 	// the condition status
 	ConditionedStatus `json:",inline"`
-	// Target used by the resource
-	Target []string `json:"target,omitempty"`
-	// ExternalLeafRefs tracks the external resources this resource is dependent upon
-	ExternalLeafRefs []string `json:"externalLeafRefs,omitempty"`
-	// ResourceIndexes tracks the indexes that or used by the resource
-	ResourceIndexes map[string]string `json:"resourceIndexes,omitempty"`
+	// rootPaths define the rootPaths of the cr, used to monitor the resource status
+	RootPaths []string `json:"rootPaths,omitempty"`
+	// HierPaths tracks the hierarchical paths of the CR based on adjacent resources
+	HierPaths map[string][]string `json:"hierPaths,omitempty"`
 }
 
 // A NetworkNodeStatus defines the observed status of a NetworkNode.

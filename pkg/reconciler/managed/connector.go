@@ -21,6 +21,7 @@ import (
 
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/yndd/ndd-runtime/pkg/resource"
+	"github.com/yndd/nddp-system/pkg/ygotnddp"
 )
 
 // ConnectionDetails created or updated during an operation on an external
@@ -71,14 +72,8 @@ type ExternalClient interface {
 	// resource. Called when the managed resource has been deleted.
 	Delete(ctx context.Context, mg resource.Managed, obs ExternalObservation) error
 
-	// GetTarget returns the targets the resource is assigned assigned to
-	GetTarget() []string
-
-	// GetConfig returns the full configuration of the network node
-	GetConfig(ctx context.Context, mg resource.Managed) ([]byte, error)
-
 	// GetResourceName returns the resource that matches the path
-	GetResourceName(ctx context.Context, mg resource.Managed, path *gnmi.Path) (string, error)
+	GetResourceList(ctx context.Context, mg resource.Managed) (map[string]*ygotnddp.NddpSystem_Gvk, error)
 
 	// Close
 	Close()
@@ -91,9 +86,7 @@ type ExternalClientFns struct {
 	CreateFn          func(ctx context.Context, mg resource.Managed, obs ExternalObservation) error
 	UpdateFn          func(ctx context.Context, mg resource.Managed, obs ExternalObservation) error
 	DeleteFn          func(ctx context.Context, mg resource.Managed, obs ExternalObservation) error
-	GetTargetFn       func() []string
-	GetConfigFn       func(ctx context.Context) ([]byte, error)
-	GetResourceNameFn func(ctx context.Context, mg resource.Managed, path *gnmi.Path) (string, error)
+	GetResourceListFn func(ctx context.Context, mg resource.Managed) (map[string]*ygotnddp.NddpSystem_Gvk, error)
 	CloseFn           func()
 }
 
@@ -121,19 +114,9 @@ func (e ExternalClientFns) Delete(ctx context.Context, mg resource.Managed, obs 
 	return e.DeleteFn(ctx, mg, obs)
 }
 
-// GetTarget return the real target for the external resource
-func (e ExternalClientFns) GetTarget() []string {
-	return e.GetTargetFn()
-}
-
-// GetConfig returns the full configuration of the network node
-func (e ExternalClientFns) GetConfig(ctx context.Context) ([]byte, error) {
-	return e.GetConfigFn(ctx)
-}
-
 // GetResourceName returns the resource matching the path
-func (e ExternalClientFns) GetResourceName(ctx context.Context, mg resource.Managed, path *gnmi.Path) (string, error) {
-	return e.GetResourceNameFn(ctx, mg, path)
+func (e ExternalClientFns) GetResourceList(ctx context.Context, mg resource.Managed) (map[string]*ygotnddp.NddpSystem_Gvk, error) {
+	return e.GetResourceList(ctx, mg)
 }
 
 // GetResourceName returns the resource matching the path
@@ -170,17 +153,9 @@ func (c *NopClient) Delete(ctx context.Context, mg resource.Managed, obs Externa
 	return nil
 }
 
-// GetTarget return on empty string list
-func (c *NopClient) GetTarget() []string { return make([]string, 0) }
-
-// GetConfig returns the full configuration of the network node
-func (c *NopClient) GetConfig(ctx context.Context, mg resource.Managed) ([]byte, error) {
-	return make([]byte, 0), nil
-}
-
 // GetResourceName returns the resource matching the path
-func (c *NopClient) GetResourceName(ctx context.Context, mg resource.Managed, path *gnmi.Path) (string, error) {
-	return "", nil
+func (c *NopClient) GetResourceList(ctx context.Context, mg resource.Managed) (map[string]*ygotnddp.NddpSystem_Gvk, error) {
+	return nil, nil
 }
 
 func (c *NopClient) Close() {}
@@ -210,21 +185,7 @@ type ExternalObservation struct {
 	// ResourceUpToDate should be true if the corresponding external resource
 	// appears to be up-to-date with the resourceSpec
 	IsUpToDate bool
-	// determines the path that are being monitored to validate if the resource is up to date
-	Paths []*gnmi.Path
 	// when the resource is not up to date these 2 parameter determine what to do to realign the resource to the spec
 	Deletes []*gnmi.Path
 	Updates []*gnmi.Update
 }
-
-// An ExternalCreation is the result of the creation of an external resource.
-/*
-type ExternalCreation struct {
-}
-*/
-
-// An ExternalUpdate is the result of an update to an external resource.
-/*
-type ExternalUpdate struct {
-}
-*/
