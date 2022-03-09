@@ -331,7 +331,7 @@ func (r *Reconciler) Reconcile(_ context.Context, req reconcile.Request) (reconc
 			return reconcile.Result{Requeue: false}, nil
 		}
 		// Set validation status to unknown if the target is not found
-		managed.SetConditions(nddv1.ParentValidationUnknown(), nddv1.LeafRefValidationUnknown(), nddv1.LeafRefValidationUnknown())
+		managed.SetConditions(nddv1.RootPathValidationUnknown())
 		// if the target was not found it means the network node is not defined or not in a status
 		// to handle the reconciliation. A reconcilation retry will be triggered
 		if strings.Contains(fmt.Sprintf("%s", err), "not found") ||
@@ -568,7 +568,7 @@ func (r *Reconciler) Reconcile(_ context.Context, req reconcile.Request) (reconc
 		// after the specified poll interval in order to observe it and react
 		// accordingly.
 		log.Debug("External resource is up to date", "requeue-after", time.Now().Add(r.pollInterval))
-		managed.SetConditions(nddv1.ReconcileSuccess(), nddv1.Available(), nddv1.LeafRefValidationSuccess(), nddv1.ParentValidationSuccess())
+		managed.SetConditions(nddv1.ReconcileSuccess(), nddv1.Available(), nddv1.RootPathValidationSuccess())
 		return reconcile.Result{RequeueAfter: r.pollInterval}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
 	}
 

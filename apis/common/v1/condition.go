@@ -29,13 +29,13 @@ type ConditionKind string
 // Condition Kinds.
 const (
 	// handled per resource
-	ConditionKindLeafRef ConditionKind = "LeafrefValidationSuccess"
+	//ConditionKindLeafRef ConditionKind = "LeafrefValidationSuccess"
 	// handled per resource
 	//ConditionKindInternalLeafRef ConditionKind = "InternalLeafrefValidationSuccess"
 	// handled per target per resource
 	//ConditionKindExternalLeafRef ConditionKind = "ExternalLeafrefValidationSuccess"
 	// handled per resource
-	ConditionKindParent ConditionKind = "ParentValidationSuccess"
+	ConditionKindRootPath ConditionKind = "RootPathValidationSuccess"
 	// handled per resource
 	ConditionKindTarget ConditionKind = "TargetFound"
 	// handled per target per resource
@@ -329,9 +329,9 @@ func TargetNotFound() Condition {
 
 // LeafRefValidationSuccess returns a condition that indicates
 // the resource leafreference(s) are found or no leafrefs exist
-func LeafRefValidationSuccess() Condition {
+func RootPathValidationSuccess() Condition {
 	return Condition{
-		Kind:               ConditionKindLeafRef,
+		Kind:               ConditionKindRootPath,
 		Status:             corev1.ConditionTrue,
 		LastTransitionTime: metav1.Now(),
 		Reason:             ConditionReasonSuccess,
@@ -340,9 +340,9 @@ func LeafRefValidationSuccess() Condition {
 
 // LeafRefValidationFailure returns a condition that indicates
 // the resource leafreference(s) are missing
-func LeafRefValidationFailure() Condition {
+func RootPathValidationFailure() Condition {
 	return Condition{
-		Kind:               ConditionKindLeafRef,
+		Kind:               ConditionKindRootPath,
 		Status:             corev1.ConditionFalse,
 		LastTransitionTime: metav1.Now(),
 		Reason:             ConditionReasonFailed,
@@ -351,110 +351,9 @@ func LeafRefValidationFailure() Condition {
 
 // LeafRefValidationUnknown returns a condition that indicates
 // the internal leafref validation is unknown
-func LeafRefValidationUnknown() Condition {
+func RootPathValidationUnknown() Condition {
 	return Condition{
-		Kind:               ConditionKindLeafRef,
-		Status:             corev1.ConditionFalse,
-		LastTransitionTime: metav1.Now(),
-		Reason:             ConditionReasonUnknown,
-	}
-}
-
-/*
-// LocalLeafRefValidationSuccess returns a condition that indicates
-// the resource leafreference(s) are found or no leafrefs exist
-func LocalLeafRefValidationSuccess() Condition {
-	return Condition{
-		Kind:               ConditionKindInternalLeafRef,
-		Status:             corev1.ConditionTrue,
-		LastTransitionTime: metav1.Now(),
-		Reason:             ConditionReasonSuccess,
-	}
-}
-
-// LocalLeafRefValidationFailure returns a condition that indicates
-// the resource leafreference(s) are missing
-func LocalLeafRefValidationFailure() Condition {
-	return Condition{
-		Kind:               ConditionKindInternalLeafRef,
-		Status:             corev1.ConditionFalse,
-		LastTransitionTime: metav1.Now(),
-		Reason:             ConditionReasonFailed,
-	}
-}
-
-// LocalLeafRefValidationUnknown returns a condition that indicates
-// the internal leafref validation is unknown
-func LocalLeafRefValidationUnknown() Condition {
-	return Condition{
-		Kind:               ConditionKindInternalLeafRef,
-		Status:             corev1.ConditionFalse,
-		LastTransitionTime: metav1.Now(),
-		Reason:             ConditionReasonUnknown,
-	}
-}
-
-// ExternalLeafRefValidationSuccess returns a condition that indicates
-// the resource leafreference(s) are found or no leafrefs exist
-func ExternalLeafRefValidationSuccess() Condition {
-	return Condition{
-		Kind:               ConditionKindExternalLeafRef,
-		Status:             corev1.ConditionTrue,
-		LastTransitionTime: metav1.Now(),
-		Reason:             ConditionReasonSuccess,
-	}
-}
-
-// ExternalLeafRefValidationFailure returns a condition that indicates
-// the resource leafreference(s) are missing
-func ExternalLeafRefValidationFailure() Condition {
-	return Condition{
-		Kind:               ConditionKindExternalLeafRef,
-		Status:             corev1.ConditionFalse,
-		LastTransitionTime: metav1.Now(),
-		Reason:             ConditionReasonFailed,
-	}
-}
-
-// ExternalLeafRefValidationUnknown returns a condition that indicates
-// the external leafref validation is unknown
-func ExternalLeafRefValidationUnknown() Condition {
-	return Condition{
-		Kind:               ConditionKindExternalLeafRef,
-		Status:             corev1.ConditionFalse,
-		LastTransitionTime: metav1.Now(),
-		Reason:             ConditionReasonUnknown,
-	}
-}
-*/
-
-// ParentValidationFailure returns a condition that indicates
-// the resource parent is found
-func ParentValidationSuccess() Condition {
-	return Condition{
-		Kind:               ConditionKindParent,
-		Status:             corev1.ConditionTrue,
-		LastTransitionTime: metav1.Now(),
-		Reason:             ConditionReasonSuccess,
-	}
-}
-
-// ExternalLeafRefValidationFailure returns a condition that indicates
-// the resource leafreference(s) are missing
-func ParentValidationFailure() Condition {
-	return Condition{
-		Kind:               ConditionKindParent,
-		Status:             corev1.ConditionFalse,
-		LastTransitionTime: metav1.Now(),
-		Reason:             ConditionReasonFailed,
-	}
-}
-
-// ParentValidationUnknown returns a condition that indicates
-// the parent validation is unknown
-func ParentValidationUnknown() Condition {
-	return Condition{
-		Kind:               ConditionKindParent,
+		Kind:               ConditionKindRootPath,
 		Status:             corev1.ConditionFalse,
 		LastTransitionTime: metav1.Now(),
 		Reason:             ConditionReasonUnknown,
