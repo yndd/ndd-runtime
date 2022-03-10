@@ -521,7 +521,7 @@ func (r *Reconciler) Reconcile(_ context.Context, req reconcile.Request) (reconc
 			log.Debug("Cannot create external resource", "error", err)
 			record.Event(managed, event.Warning(reasonCannotCreate, err))
 			managed.SetConditions(nddv1.ReconcileError(errors.Wrap(err, errReconcileCreate)), nddv1.Unknown())
-			return reconcile.Result{Requeue: true}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
+			return reconcile.Result{RequeueAfter: veryShortWait}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
 		}
 		managed.SetConditions(nddv1.Creating())
 
@@ -546,7 +546,7 @@ func (r *Reconciler) Reconcile(_ context.Context, req reconcile.Request) (reconc
 			log.Debug("Cannot create external resource", "error", err)
 			record.Event(managed, event.Warning(reasonCannotCreate, err))
 			managed.SetConditions(nddv1.ReconcileError(errors.Wrap(err, errReconcileCreate)), nddv1.Unknown())
-			return reconcile.Result{Requeue: true}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
+			return reconcile.Result{RequeueAfter: veryShortWait}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
 		}
 		managed.SetConditions(nddv1.Creating())
 
