@@ -111,10 +111,14 @@ func (c *NopClient) Observe(ctx context.Context, tr tresource.Transaction) (Exte
 }
 
 // Create does nothing. It returns an empty ExternalCreation and no error.
-func (c *NopClient) Create(ctx context.Context, tr tresource.Transaction, gvkList []string) error { return nil }
+func (c *NopClient) Create(ctx context.Context, tr tresource.Transaction, gvkList []string) error {
+	return nil
+}
 
 // Delete does nothing. It never returns an error.
-func (c *NopClient) Delete(ctx context.Context, tr tresource.Transaction, gvkList []string) error { return nil }
+func (c *NopClient) Delete(ctx context.Context, tr tresource.Transaction, gvkList []string) error {
+	return nil
+}
 
 func (c *NopClient) Close() {}
 
@@ -132,6 +136,7 @@ type ExternalObservation struct {
 	// indicates if the transaction was successfully applied to the device or not
 	// represents failed or success status of the transaction
 	Success bool
+	Message string
 	// inidcates the
 	Pending bool
 	// the gvk resources applied to the cache

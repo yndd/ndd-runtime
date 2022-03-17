@@ -479,7 +479,7 @@ func (r *Reconciler) Reconcile(_ context.Context, req reconcile.Request) (reconc
 	if observation.Failed {
 		// The resource was not successfully applied to the device, the spec should change to retry
 		log.Debug("External resource cache failed", "requeue-after", time.Now().Add(shortWait))
-		managed.SetConditions(nddv1.Failed())
+		managed.SetConditions(nddv1.Failed(observation.FailedMessage))
 		return reconcile.Result{RequeueAfter: shortWait}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
 	}
 

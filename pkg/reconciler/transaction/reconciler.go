@@ -420,7 +420,7 @@ func (r *Reconciler) Reconcile(_ context.Context, req reconcile.Request) (reconc
 			// The resource was not successfully applied to the device, the spec should change to retry
 			log.Debug("Device transaction failed")
 			record.Event(tr, event.Normal(reasonFailed, "Device Transaction failed"))
-			tr.SetDeviceConditions(deviceName, nddv1.ReconcileSuccess(), nddv1.Failed())
+			tr.SetDeviceConditions(deviceName, nddv1.ReconcileSuccess(), nddv1.Failed(observation.Message))
 			continue
 		}
 		// success -> stop
@@ -459,7 +459,7 @@ func (r *Reconciler) Reconcile(_ context.Context, req reconcile.Request) (reconc
 	}
 
 	if !success {
-		tr.SetConditions(nddv1.ReconcileSuccess(), nddv1.Failed())
+		tr.SetConditions(nddv1.ReconcileSuccess(), nddv1.Failed("todo"))
 		return reconcile.Result{}, errors.Wrap(r.client.Status().Update(ctx, tr), errUpdateTransactionStatus)
 	}
 	tr.SetConditions(nddv1.ReconcileSuccess(), nddv1.Available())

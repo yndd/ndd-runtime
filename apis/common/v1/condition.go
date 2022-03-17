@@ -258,14 +258,15 @@ func Unavailable() Condition {
 	}
 }
 
-// Failed returns a condition that indicates the resource is not
-// currently available for use.
-func Failed() Condition {
+// Failed returns a condition that indicates the resource
+// failed to get instantiated.
+func Failed(msg string) Condition {
 	return Condition{
 		Kind:               ConditionKindReady,
 		Status:             corev1.ConditionFalse,
 		LastTransitionTime: metav1.Now(),
-		Reason:             ConditionReasonUnavailable,
+		Reason:             ConditionReasonFailed,
+		Message:            msg,
 	}
 }
 

@@ -178,6 +178,8 @@ type ExternalObservation struct {
 	// unless the resourceSpec changes the transaction would not be successfull
 	// we dont try to reconcile unless the spec changed
 	Failed bool
+	// indicated the reason why a failure occured
+	FailedMessage string
 	// ResourceHasData can be true when a managed resource is created, but the
 	// device had already data in that resource. The data needs to get aligned
 	// with the intended resource data
