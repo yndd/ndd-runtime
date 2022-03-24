@@ -16,6 +16,19 @@ limitations under the License.
 
 package v1
 
+// A DeploymentPolicy determines what should happen to the underlying external
+// resource when a managed resource is deployed.
+// +kubebuilder:validation:Enum=Active;Planned
+type DeploymentPolicy string
+
+const (
+	// DeploymentActive means the external resource will deployed
+	DeploymentActive DeploymentPolicy = "Active"
+
+	// DeploymentPlanned means the resource identifier will be allocated but not deployed
+	DeploymentPlanned DeploymentPolicy = "Planned"
+)
+
 // A DeletionPolicy determines what should happen to the underlying external
 // resource when a managed resource is deleted.
 // +kubebuilder:validation:Enum=Orphan;Delete

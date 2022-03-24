@@ -75,13 +75,12 @@ func (obj *TypedReference) GetObjectKind() schema.ObjectKind { return obj }
 // A ResourceSpec defines the desired state of a managed resource.
 type ResourceSpec struct {
 	// Active specifies if the managed resource is active or not
-	// +kubebuilder:default=true
-	Active bool `json:"active,omitempty"`
+	// +kubebuilder:default=Active
+	DeploymentPolicy DeploymentPolicy `json:"deploymentPolicy,omitempty"`
 
 	// NetworkNodeReference specifies which network node will be used to
 	// create, observe, update, and delete this managed resource
-	// +kubebuilder:default={"name": "default"}
-	NetworkNodeReference *Reference `json:"networkNodeRef,omitempty"`
+	NetworkNodeReference *Reference `json:"networkNodeRef"`
 
 	// DeletionPolicy specifies what will happen to the underlying external
 	// when this managed resource is deleted - either "Delete" or "Orphan" the
