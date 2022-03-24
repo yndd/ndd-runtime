@@ -78,8 +78,8 @@ type Orphanable interface {
 
 // An Orphanable resource may specify a DeletionPolicy.
 type Deployment interface {
-	SetDeployment(p nddv1.DeploymentPolicy)
-	GetDeployment() nddv1.DeploymentPolicy
+	SetDeploymentPolicy(p nddv1.DeploymentPolicy)
+	GetDeploymentPolicy() nddv1.DeploymentPolicy
 }
 
 // A UserCounter can count how many users it has.
