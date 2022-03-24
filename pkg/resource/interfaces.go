@@ -77,9 +77,9 @@ type Orphanable interface {
 }
 
 // An Orphanable resource may specify a DeletionPolicy.
-type Active interface {
-	SetActive(p bool)
-	GetActive() bool
+type Deployment interface {
+	SetDeployment(p nddv1.DeploymentPolicy)
+	GetDeployment() nddv1.DeploymentPolicy
 }
 
 // A UserCounter can count how many users it has.
@@ -101,7 +101,7 @@ type Managed interface {
 
 	NetworkNodeReferencer
 	Orphanable
-	Active
+	Deployment
 
 	Conditioned
 	RootPaths
