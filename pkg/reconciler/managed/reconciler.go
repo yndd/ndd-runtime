@@ -385,6 +385,7 @@ func (r *Reconciler) Reconcile(_ context.Context, req reconcile.Request) (reconc
 		managed.SetConditions(nddv1.ReconcileError(errors.Wrap(err, errReconcileValidateResource)), nddv1.Unknown())
 		return reconcile.Result{Requeue: true}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
 	}
+	log.Debug("validateResourceObservation", "observation", validateResourceObservation)
 
 	if validateResourceObservation.Exhausted {
 		// When the device is exhausted we should not reconcile, so it is better to wait a reconciliation loop before retrying
@@ -432,6 +433,7 @@ func (r *Reconciler) Reconcile(_ context.Context, req reconcile.Request) (reconc
 		managed.SetConditions(nddv1.ReconcileError(errors.Wrap(err, errReconcileValidateConfig)), nddv1.Unknown())
 		return reconcile.Result{Requeue: true}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
 	}
+	log.Debug("validateConfigObservation", "observation", validateConfigObservation)
 
 	if !validateConfigObservation.ValidateSucces {
 		// The resource was not successfully applied to the device, the spec should change to retry
