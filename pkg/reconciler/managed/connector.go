@@ -56,7 +56,7 @@ type ExternalClient interface {
 	// if any. Observe implementations must not modify the external resource,
 	// but may update the supplied Managed resource to reflect the state of the
 	// external resource.
-	Observe(ctx context.Context, mg resource.Managed) (ExternalObservation, error)
+	Observe(ctx context.Context, mg resource.Managed, runningCfg []byte) (ExternalObservation, error)
 
 	// Create an external resource per the specifications of the supplied
 	// Managed resource. Called when Observe reports that the associated
@@ -72,8 +72,13 @@ type ExternalClient interface {
 	// resource. Called when the managed resource has been deleted.
 	Delete(ctx context.Context, mg resource.Managed, obs ExternalObservation) error
 
-	// GetResourceName returns the resource that matches the path
-	GetResourceList(ctx context.Context, mg resource.Managed) (map[string]*ygotnddp.NddpSystem_Gvk, error)
+	// GetSystemConfig returns the system config for a particular device from
+	// the system proxy cache
+	GetSystemConfig(ctx context.Context, mg resource.Managed) (*ygotnddp.Device, error)
+
+	// GetResourceName returns the running config for a particular device from
+	// the running device proxy cache
+	GetRunningConfig(ctx context.Context, mg resource.Managed) ([]byte, error)
 
 	// Close
 	Close()
@@ -82,18 +87,19 @@ type ExternalClient interface {
 // ExternalClientFns are a series of functions that satisfy the ExternalClient
 // interface.
 type ExternalClientFns struct {
-	ObserveFn         func(ctx context.Context, mg resource.Managed) (ExternalObservation, error)
-	CreateFn          func(ctx context.Context, mg resource.Managed, obs ExternalObservation) error
-	UpdateFn          func(ctx context.Context, mg resource.Managed, obs ExternalObservation) error
-	DeleteFn          func(ctx context.Context, mg resource.Managed, obs ExternalObservation) error
-	GetResourceListFn func(ctx context.Context, mg resource.Managed) (map[string]*ygotnddp.NddpSystem_Gvk, error)
-	CloseFn           func()
+	ObserveFn          func(ctx context.Context, mg resource.Managed, runningCfg []byte) (ExternalObservation, error)
+	CreateFn           func(ctx context.Context, mg resource.Managed, obs ExternalObservation) error
+	UpdateFn           func(ctx context.Context, mg resource.Managed, obs ExternalObservation) error
+	DeleteFn           func(ctx context.Context, mg resource.Managed, obs ExternalObservation) error
+	GetSystemConfigFn  func(ctx context.Context, mg resource.Managed) (*ygotnddp.Device, error)
+	GetRunningConfigFn func(ctx context.Context, mg resource.Managed) ([]byte, error)
+	CloseFn            func()
 }
 
 // Observe the external resource the supplied Managed resource represents, if
 // any.
-func (e ExternalClientFns) Observe(ctx context.Context, mg resource.Managed) (ExternalObservation, error) {
-	return e.ObserveFn(ctx, mg)
+func (e ExternalClientFns) Observe(ctx context.Context, mg resource.Managed, runningCfg []byte) (ExternalObservation, error) {
+	return e.ObserveFn(ctx, mg, runningCfg)
 }
 
 // Create an external resource per the specifications of the supplied Managed
@@ -114,9 +120,16 @@ func (e ExternalClientFns) Delete(ctx context.Context, mg resource.Managed, obs 
 	return e.DeleteFn(ctx, mg, obs)
 }
 
-// GetResourceName returns the resource matching the path
-func (e ExternalClientFns) GetResourceList(ctx context.Context, mg resource.Managed) (map[string]*ygotnddp.NddpSystem_Gvk, error) {
-	return e.GetResourceList(ctx, mg)
+// GetSystemConfig returns the system config for a particular device from
+// the system proxy cache
+func (e ExternalClientFns) GetSystemConfig(ctx context.Context, mg resource.Managed) (*ygotnddp.Device, error) {
+	return e.GetSystemConfig(ctx, mg)
+}
+
+// GetResourceName returns the running config for a particular device from
+// the running device proxy cache
+func (e ExternalClientFns) GetRunningConfig(ctx context.Context, mg resource.Managed) ([]byte, error) {
+	return e.GetRunningConfig(ctx, mg)
 }
 
 // GetResourceName returns the resource matching the path
@@ -134,7 +147,7 @@ func (c *NopConnecter) Connect(_ context.Context, _ resource.Managed) (ExternalC
 type NopClient struct{}
 
 // Observe does nothing. It returns an empty ExternalObservation and no error.
-func (c *NopClient) Observe(ctx context.Context, mg resource.Managed) (ExternalObservation, error) {
+func (c *NopClient) Observe(ctx context.Context, mg resource.Managed, runningCfg []byte) (ExternalObservation, error) {
 	return ExternalObservation{}, nil
 }
 
@@ -153,8 +166,15 @@ func (c *NopClient) Delete(ctx context.Context, mg resource.Managed, obs Externa
 	return nil
 }
 
-// GetResourceName returns the resource matching the path
-func (c *NopClient) GetResourceList(ctx context.Context, mg resource.Managed) (map[string]*ygotnddp.NddpSystem_Gvk, error) {
+// GetSystemConfig returns the system config for a particular device from
+// the system proxy cache
+func (c *NopClient) GetSystemConfig(ctx context.Context, mg resource.Managed) (*ygotnddp.Device, error) {
+	return nil, nil
+}
+
+// GetResourceName returns the running config for a particular device from
+// the running device proxy cache
+func (c *NopClient) GetRunningConfig(ctx context.Context, mg resource.Managed) ([]byte, error) {
 	return nil, nil
 }
 

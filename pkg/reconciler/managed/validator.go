@@ -25,26 +25,61 @@ import (
 )
 
 type Validator interface {
-	ValidateRootPaths(ctx context.Context, mg resource.Managed, resourceList map[string]*ygotnddp.NddpSystem_Gvk) (ValidateRootPathsObservation, error)
+	ValidateResource(ctx context.Context, mg resource.Managed, systemCfg *ygotnddp.Device) (ValidateResourceObservation, error)
+
+	ValidateConfig(ctx context.Context, mg resource.Managed, systemCfg *ygotnddp.Device, runningCfg []byte) (ValidateConfigObservation, error)
 }
 
 type ValidatorFn struct {
-	ValidateRootPathsFn func(ctx context.Context, mg resource.Managed, resourceList map[string]*ygotnddp.NddpSystem_Gvk) (ValidateRootPathsObservation, error)
+	ValidateResourceFn func(ctx context.Context, mg resource.Managed, systemCfg *ygotnddp.Device) (ValidateResourceObservation, error)
+	ValidateConfigFn   func(ctx context.Context, mg resource.Managed, systemCfg *ygotnddp.Device, runningCfg []byte) (ValidateConfigObservation, error)
 }
 
-func (e ValidatorFn) ValidateRootPaths(ctx context.Context, mg resource.Managed, resourceList map[string]*ygotnddp.NddpSystem_Gvk) (ValidateRootPathsObservation, error) {
-	return e.ValidateRootPathsFn(ctx, mg, resourceList)
+func (e ValidatorFn) ValidateResource(ctx context.Context, mg resource.Managed, systemCfg *ygotnddp.Device) (ValidateResourceObservation, error) {
+	return e.ValidateResourceFn(ctx, mg, systemCfg)
+}
+
+func (e ValidatorFn) ValidateConfig(ctx context.Context, mg resource.Managed, systemCfg *ygotnddp.Device, runningCfg []byte) (ValidateConfigObservation, error) {
+	return e.ValidateConfigFn(ctx, mg, systemCfg, runningCfg)
 }
 
 type NopValidator struct{}
 
-func (e *NopValidator) ValidateRootPaths(ctx context.Context, mg resource.Managed, resourceList map[string]*ygotnddp.NddpSystem_Gvk) (ValidateRootPathsObservation, error) {
-	return ValidateRootPathsObservation{}, nil
+func (e *NopValidator) ValidateResource(ctx context.Context, mg resource.Managed, systemCfg *ygotnddp.Device) (ValidateResourceObservation, error) {
+	return ValidateResourceObservation{}, nil
 }
 
-type ValidateRootPathsObservation struct {
+func (e *NopValidator) ValidateConfig(ctx context.Context, mg resource.Managed, systemCfg *ygotnddp.Device, runningCfg []byte) (ValidateConfigObservation, error) {
+	return ValidateConfigObservation{}, nil
+}
+
+type ValidateResourceObservation struct {
+	// indicates if the device is exhausted or not, this can happen when too many transactions
+	// occured towards the device
+	Exhausted bool
+	// indicates if the device in the proxy-cache is ready or not, during proxy-cache
+	// startup this can occur during proxy-cache initialization
+	Ready bool
+	// indicates if the MR is not yet reconciled, the reconciler should wait for further actions
+	Pending bool
+	// indicates if a MR exists in the cache
+	Exists bool
+	// indicates if the resource spec was not successfully applied to the device
+	// unless the resourceSpec changes the transaction would not be successfull
+	// we dont try to reconcile unless the spec changed
+	Failed bool
+	// Provides additional information why a failure occurs
+	Message string
+	// indicates if the spec was changed and subsequent actionsare required
 	Changed     bool
 	RootPaths   []string
-	HierPaths   map[string][]string
+	DeletePaths []*gnmi.Path
+}
+
+type ValidateConfigObservation struct {
+	ValidateSucces bool
+	// Provides additional information why a validation failured occured
+	Message     string
+	Changed     bool
 	DeletePaths []*gnmi.Path
 }
