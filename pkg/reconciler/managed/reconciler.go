@@ -482,7 +482,7 @@ func (r *Reconciler) Reconcile(_ context.Context, req reconcile.Request) (reconc
 
 	validateConfigObservation, err := r.validator.ValidateConfig(ctx, managed, systemCfg, runningCfg)
 	if err != nil {
-		log.Debug("Cannot validate config", "error", err)
+		log.Debug("Validate config failed", "error", err, "requeue-after", time.Now().Add(shortWait))
 		record.Event(managed, event.Warning(reasonCannotValidateConfig, err))
 		managed.SetConditions(nddv1.ReconcileError(errors.Wrap(err, errReconcileValidateConfig)), nddv1.Unknown())
 		return reconcile.Result{Requeue: true}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
@@ -490,10 +490,10 @@ func (r *Reconciler) Reconcile(_ context.Context, req reconcile.Request) (reconc
 	log.Debug("validateConfigObservation", "observation", validateConfigObservation)
 
 	if !validateConfigObservation.ValidateSucces {
-		// The resource was not successfully applied to the device, the spec should change to retry
-		log.Debug("resourceValidation failed", "requeue-after", time.Now().Add(shortWait))
+		// The validation of the resource configuration failed
+		log.Debug("resourceValidation failed", "requeue-after", time.Now().Add(mediumWait))
 		managed.SetConditions(nddv1.Failed(validateConfigObservation.Message))
-		return reconcile.Result{RequeueAfter: shortWait}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
+		return reconcile.Result{RequeueAfter: mediumWait}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
 	}
 
 	// TODO if changed -> delete the paths that are no longer needed
