@@ -394,9 +394,9 @@ func (r *Reconciler) Reconcile(_ context.Context, req reconcile.Request) (reconc
 		return reconcile.Result{RequeueAfter: mediumWait}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
 	}
 
-	// TBD 
+	// TBD
 	// to see if we need to exclude this for deletion
-	if !meta.WasDeleted(managed) &&  validateResourceObservation.Pending {
+	if !meta.WasDeleted(managed) && validateResourceObservation.Pending {
 		//Action was not yet executed so there is no point in doing further reconciliation
 		log.Debug("Action is not yet executed", "requeue-after", time.Now().Add(veryShortWait))
 		managed.SetConditions(nddv1.Unavailable())
@@ -490,15 +490,35 @@ func (r *Reconciler) Reconcile(_ context.Context, req reconcile.Request) (reconc
 	log.Debug("validateConfigObservation", "observation", validateConfigObservation)
 
 	if !validateConfigObservation.ValidateSucces {
-		// The validation of the resource configuration failed
+		// The validation of the resource configuration failed, so we need a new spec before retrying, so the timeut is rather long
 		log.Debug("resourceValidation failed", "requeue-after", time.Now().Add(mediumWait))
 		managed.SetConditions(nddv1.Failed(validateConfigObservation.Message))
 		return reconcile.Result{RequeueAfter: mediumWait}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
 	}
 
-	// TODO if changed -> delete the paths that are no longer needed
+	// Set Root Paths
 	managed.SetRootPaths(validateConfigObservation.RootPaths)
 
+	// check if the spec changed, if so we should need to update the external resource first before further processing
+	if len(validateConfigObservation.Deletes) > 0 || len(validateConfigObservation.Updates) > 0 {
+		if err := external.Update(externalCtx, managed, ExternalObservation{
+			Deletes: validateConfigObservation.Deletes,
+			Updates: validateConfigObservation.Updates,
+		}); err != nil {
+			// We'll hit this condition if we can't update our external resource,
+			log.Debug("Cannot update external resource")
+			record.Event(managed, event.Warning(reasonCannotUpdate, err))
+			managed.SetConditions(nddv1.ReconcileError(errors.Wrap(err, errReconcileUpdate)), nddv1.Unknown())
+			return reconcile.Result{Requeue: true}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
+		}
+		managed.SetConditions(nddv1.Updating())
+
+		// We've successfully updated our external resource. We will
+		// reconcile short to observe the result of the update
+		record.Event(managed, event.Normal(reasonUpdated, "Successfully requested update of external resource"))
+		managed.SetConditions(nddv1.ReconcileSuccess(), nddv1.Updating())
+		return reconcile.Result{RequeueAfter: veryShortWait}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
+	}	
 
 	//log.Debug("Observation", "observation", observation)
 	if !validateResourceObservation.Exists {

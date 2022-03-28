@@ -70,15 +70,15 @@ type ValidateResourceObservation struct {
 	Failed bool
 	// Provides additional information why a failure occurs
 	Message string
-	
 }
 
 type ValidateConfigObservation struct {
 	ValidateSucces bool
 	// Provides additional information why a validation failured occured
-	Message     string
+	Message string
 	// indicates if the spec was changed and subsequent actionsare required
-	Changed     bool
-	RootPaths   []string
-	DeletePaths []*gnmi.Path
+	Deletes   []*gnmi.Path
+	Updates   []*gnmi.Update
+	// the rootPaths of the cr spec
+	RootPaths []string
 }
