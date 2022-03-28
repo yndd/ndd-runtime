@@ -394,8 +394,9 @@ func (r *Reconciler) Reconcile(_ context.Context, req reconcile.Request) (reconc
 		return reconcile.Result{RequeueAfter: mediumWait}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
 	}
 
-	// we need to exclude this check when a resource is deleted, otherwise the delete would never be executed
-	if !meta.WasDeleted(managed) && validateResourceObservation.Exists && validateResourceObservation.Pending {
+	// TBD 
+	// to see if we need to exclude this for deletion
+	if !meta.WasDeleted(managed) &&  validateResourceObservation.Pending {
 		//Action was not yet executed so there is no point in doing further reconciliation
 		log.Debug("Action is not yet executed", "requeue-after", time.Now().Add(veryShortWait))
 		managed.SetConditions(nddv1.Unavailable())
@@ -409,41 +410,6 @@ func (r *Reconciler) Reconcile(_ context.Context, req reconcile.Request) (reconc
 		managed.SetConditions(nddv1.Failed(validateResourceObservation.Message))
 		return reconcile.Result{RequeueAfter: shortWait}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
 	}
-
-	runningCfg, err := external.GetRunningConfig(externalCtx, managed)
-	if err != nil {
-		log.Debug("Cannot get running", "error", err)
-		record.Event(managed, event.Warning(reasonCannotGetRunningConfig, err))
-		managed.SetConditions(nddv1.ReconcileError(errors.Wrap(err, errReconcileValidateConfig)), nddv1.Unknown())
-		return reconcile.Result{Requeue: true}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
-	}
-
-	if runningCfg == nil {
-		// When runningCfg is nil -> proxy cache is Not Ready
-		// When the cache is initializing we should not reconcile, so it is better to wait a reconciliation loop before retrying
-		log.Debug("External resource cache is not ready", "requeue-after", time.Now().Add(shortWait))
-		managed.SetConditions(nddv1.Unavailable())
-		return reconcile.Result{RequeueAfter: shortWait}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
-	}
-
-	validateConfigObservation, err := r.validator.ValidateConfig(ctx, managed, systemCfg, runningCfg)
-	if err != nil {
-		log.Debug("Cannot validate config", "error", err)
-		record.Event(managed, event.Warning(reasonCannotValidateConfig, err))
-		managed.SetConditions(nddv1.ReconcileError(errors.Wrap(err, errReconcileValidateConfig)), nddv1.Unknown())
-		return reconcile.Result{Requeue: true}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
-	}
-	log.Debug("validateConfigObservation", "observation", validateConfigObservation)
-
-	if !validateConfigObservation.ValidateSucces {
-		// The resource was not successfully applied to the device, the spec should change to retry
-		log.Debug("resourceValidation failed", "requeue-after", time.Now().Add(shortWait))
-		managed.SetConditions(nddv1.Failed(validateConfigObservation.Message))
-		return reconcile.Result{RequeueAfter: shortWait}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
-	}
-
-	// TODO if changed -> delete the paths that are no longer needed
-	managed.SetRootPaths(validateConfigObservation.RootPaths)
 
 	if meta.WasDeleted(managed) {
 		// delete triggered
@@ -497,6 +463,42 @@ func (r *Reconciler) Reconcile(_ context.Context, req reconcile.Request) (reconc
 		// log.Debug("Successfully deleted managed resource")
 		return reconcile.Result{Requeue: false}, nil
 	}
+
+	runningCfg, err := external.GetRunningConfig(externalCtx, managed)
+	if err != nil {
+		log.Debug("Cannot get running", "error", err)
+		record.Event(managed, event.Warning(reasonCannotGetRunningConfig, err))
+		managed.SetConditions(nddv1.ReconcileError(errors.Wrap(err, errReconcileValidateConfig)), nddv1.Unknown())
+		return reconcile.Result{Requeue: true}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
+	}
+
+	if runningCfg == nil {
+		// When runningCfg is nil -> proxy cache is Not Ready
+		// When the cache is initializing we should not reconcile, so it is better to wait a reconciliation loop before retrying
+		log.Debug("External resource cache is not ready", "requeue-after", time.Now().Add(shortWait))
+		managed.SetConditions(nddv1.Unavailable())
+		return reconcile.Result{RequeueAfter: shortWait}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
+	}
+
+	validateConfigObservation, err := r.validator.ValidateConfig(ctx, managed, systemCfg, runningCfg)
+	if err != nil {
+		log.Debug("Cannot validate config", "error", err)
+		record.Event(managed, event.Warning(reasonCannotValidateConfig, err))
+		managed.SetConditions(nddv1.ReconcileError(errors.Wrap(err, errReconcileValidateConfig)), nddv1.Unknown())
+		return reconcile.Result{Requeue: true}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
+	}
+	log.Debug("validateConfigObservation", "observation", validateConfigObservation)
+
+	if !validateConfigObservation.ValidateSucces {
+		// The resource was not successfully applied to the device, the spec should change to retry
+		log.Debug("resourceValidation failed", "requeue-after", time.Now().Add(shortWait))
+		managed.SetConditions(nddv1.Failed(validateConfigObservation.Message))
+		return reconcile.Result{RequeueAfter: shortWait}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
+	}
+
+	// TODO if changed -> delete the paths that are no longer needed
+	managed.SetRootPaths(validateConfigObservation.RootPaths)
+
 
 	//log.Debug("Observation", "observation", observation)
 	if !validateResourceObservation.Exists {
