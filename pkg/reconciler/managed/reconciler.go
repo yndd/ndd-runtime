@@ -49,36 +49,46 @@ const (
 	defaultpollInterval = 1 * time.Minute
 
 	// errors
-	errGetManaged                = "cannot get managed resource"
-	errUpdateManagedAfterCreate  = "cannot update managed resource. this may have resulted in a leaked external resource"
-	errReconcileConnect          = "connect failed"
-	errReconcileObserve          = "observe failed"
-	errReconcileCreate           = "create failed"
-	errReconcileUpdate           = "update failed"
-	errReconcileDelete           = "delete failed"
-	errReconcileGetSystemConfig  = "get system device config failed"
-	errReconcileGetRunningConfig = "get running device config failed"
-	errReconcileValidateResource = "resource validation failed"
-	errReconcileValidateConfig   = "config validation failed"
-	errUpdateManagedStatus       = "cannot update status of the managed resource"
+	errGetManaged                    = "cannot get managed resource"
+	errUpdateManagedAfterCreate      = "cannot update managed resource. this may have resulted in a leaked external resource"
+	errReconcileConnect              = "connect failed"
+	errReconcileObserve              = "observe failed"
+	errReconcileCreate               = "create failed"
+	errReconcileUpdate               = "update failed"
+	errReconcileDelete               = "delete failed"
+	errReconcileGetSystemConfig      = "get system device config failed"
+	errReconcileGetRunningConfig     = "get running device config failed"
+	errReconcileValidateResource     = "resource validation failed"
+	errReconcileValidateConfig       = "config validation failed"
+	errReconcileValidateCrSpecDelete = "validate delete cr spec failed"
+	errReconcileValidateCrSpecUpdate = "validate update cr spec failed"
+	errReconcileGetRootPaths         = "get rootPaths failed"
+	errReconcileGetCrSpecDiff        = "get cr spec diff failed"
+	errReconcileGetCrActualDiff      = "get cr actual diff failed"
+	errUpdateManagedStatus           = "cannot update status of the managed resource"
 
 	// Event reasons.
-	reasonCannotConnect          event.Reason = "CannotConnectToProvider"
-	reasonCannotInitialize       event.Reason = "CannotInitializeManagedResource"
-	reasonCannotResolveRefs      event.Reason = "CannotResolveResourceReferences"
-	reasonCannotObserve          event.Reason = "CannotObserveExternalResource"
-	reasonCannotCreate           event.Reason = "CannotCreateExternalResource"
-	reasonCannotDelete           event.Reason = "CannotDeleteExternalResource"
-	reasonCannotPublish          event.Reason = "CannotPublishConnectionDetails"
-	reasonCannotUnpublish        event.Reason = "CannotUnpublishConnectionDetails"
-	reasonCannotUpdate           event.Reason = "CannotUpdateExternalResource"
-	reasonCannotUpdateManaged    event.Reason = "CannotUpdateManagedResource"
-	reasonCannotGetSystemConfig  event.Reason = "CannotGetSystemConfig"
-	reasonCannotGetRunningConfig event.Reason = "CannotGetRunningConfig"
-	reasonCannotGetValideTarget  event.Reason = "CannotGetValideTarget"
-	reasonCannotValidateResource event.Reason = "CannotValidateResource"
-	reasonCannotValidateConfig   event.Reason = "CannotValidateConfig"
-	reasonValidateResourceFailed event.Reason = "reasonValidateResourceFailed"
+	reasonCannotConnect              event.Reason = "CannotConnectToProvider"
+	reasonCannotInitialize           event.Reason = "CannotInitializeManagedResource"
+	reasonCannotResolveRefs          event.Reason = "CannotResolveResourceReferences"
+	reasonCannotObserve              event.Reason = "CannotObserveExternalResource"
+	reasonCannotCreate               event.Reason = "CannotCreateExternalResource"
+	reasonCannotDelete               event.Reason = "CannotDeleteExternalResource"
+	reasonCannotPublish              event.Reason = "CannotPublishConnectionDetails"
+	reasonCannotUnpublish            event.Reason = "CannotUnpublishConnectionDetails"
+	reasonCannotUpdate               event.Reason = "CannotUpdateExternalResource"
+	reasonCannotUpdateManaged        event.Reason = "CannotUpdateManagedResource"
+	reasonCannotGetSystemConfig      event.Reason = "CannotGetSystemConfig"
+	reasonCannotGetRunningConfig     event.Reason = "CannotGetRunningConfig"
+	reasonCannotGetValideTarget      event.Reason = "CannotGetValideTarget"
+	reasonCannotValidateResource     event.Reason = "CannotValidateResource"
+	reasonCannotValidateConfig       event.Reason = "CannotValidateConfig"
+	reasonCannotValidateCrSpecDelete event.Reason = "CannotValidateCrSpecDelete"
+	reasonCannotValidateCrSpecUpdate event.Reason = "CannotValidateCrSpecUpdate"
+	reasonCannotGetRootPaths         event.Reason = "CannotGetRootPaths"
+	reasonCannotGetCrSpecDiff        event.Reason = "CannotGetCrSpecDiff"
+	reasonCannotGetCrActualDiff      event.Reason = "CannotGetCrActualDiff"
+	reasonValidateResourceFailed     event.Reason = "reasonValidateResourceFailed"
 
 	reasonDeleted event.Reason = "DeletedExternalResource"
 	reasonCreated event.Reason = "CreatedExternalResource"
@@ -359,7 +369,7 @@ func (r *Reconciler) Reconcile(_ context.Context, req reconcile.Request) (reconc
 	defer external.Close()
 
 	// given we can connect to the network node device driver, the target is found
-	// update codition and update the status field
+	// update condition and update the status field
 	managed.SetConditions(nddv1.TargetFound())
 
 	systemCfg, err := external.GetSystemConfig(externalCtx, managed)
@@ -373,21 +383,21 @@ func (r *Reconciler) Reconcile(_ context.Context, req reconcile.Request) (reconc
 	if systemCfg == nil {
 		// When systemCfg is nil -> proxy cache is Not Ready
 		// When the cache is initializing we should not reconcile, so it is better to wait a reconciliation loop before retrying
-		log.Debug("External resource cache is not ready", "requeue-after", time.Now().Add(shortWait))
+		log.Debug("External proxy-cache is not ready", "requeue-after", time.Now().Add(shortWait))
 		managed.SetConditions(nddv1.Unavailable())
 		return reconcile.Result{RequeueAfter: shortWait}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
 	}
 
-	validateResourceObservation, err := r.validator.ValidateResource(ctx, managed, systemCfg)
+	crObservation, err := r.validator.GetCrStatus(ctx, managed, systemCfg)
 	if err != nil {
 		log.Debug("Cannot validate rootPaths", "error", err)
 		record.Event(managed, event.Warning(reasonCannotValidateResource, err))
 		managed.SetConditions(nddv1.ReconcileError(errors.Wrap(err, errReconcileValidateResource)), nddv1.Unknown())
 		return reconcile.Result{Requeue: true}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
 	}
-	log.Debug("validateResourceObservation", "observation", validateResourceObservation)
+	log.Debug("validate get cr status", "observation", crObservation)
 
-	if validateResourceObservation.Exhausted {
+	if crObservation.Exhausted {
 		// When the device is exhausted we should not reconcile, so it is better to wait a reconciliation loop before retrying
 		log.Debug("External resource cache is exhausted", "requeue-after", time.Now().Add(mediumWait))
 		managed.SetConditions(nddv1.Unavailable())
@@ -396,18 +406,26 @@ func (r *Reconciler) Reconcile(_ context.Context, req reconcile.Request) (reconc
 
 	// TBD
 	// to see if we need to exclude this for deletion
-	if !meta.WasDeleted(managed) && validateResourceObservation.Pending {
+	if crObservation.Pending {
 		//Action was not yet executed so there is no point in doing further reconciliation
 		log.Debug("Action is not yet executed", "requeue-after", time.Now().Add(veryShortWait))
 		managed.SetConditions(nddv1.Unavailable())
 		return reconcile.Result{RequeueAfter: veryShortWait}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
 	}
 
-	// we need to exclude this check when a resource is deleted
-	if !meta.WasDeleted(managed) && validateResourceObservation.Failed {
-		// The resource was not successfully applied to the device, the spec should change to retry
-		log.Debug("External resource cache failed", "requeue-after", time.Now().Add(shortWait))
-		managed.SetConditions(nddv1.Failed(validateResourceObservation.Message))
+	runningCfg, err := external.GetRunningConfig(externalCtx, managed)
+	if err != nil {
+		log.Debug("Cannot get running", "error", err)
+		record.Event(managed, event.Warning(reasonCannotGetRunningConfig, err))
+		managed.SetConditions(nddv1.ReconcileError(errors.Wrap(err, errReconcileValidateConfig)), nddv1.Unknown())
+		return reconcile.Result{Requeue: true}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
+	}
+
+	if runningCfg == nil {
+		// When runningCfg is nil -> proxy cache is Not Ready
+		// When the cache is initializing we should not reconcile, so it is better to wait a reconciliation loop before retrying
+		log.Debug("External resource cache is not ready", "requeue-after", time.Now().Add(shortWait))
+		managed.SetConditions(nddv1.Unavailable())
 		return reconcile.Result{RequeueAfter: shortWait}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
 	}
 
@@ -419,7 +437,21 @@ func (r *Reconciler) Reconcile(_ context.Context, req reconcile.Request) (reconc
 		// We'll only reach this point if deletion policy is not orphan, so we
 		// are safe to call external deletion if external resource exists or the
 		// resource has data
-		if validateResourceObservation.Exists {
+		if crObservation.Exists {
+			crSpecObservation, err := r.validator.ValidateCrSpecDelete(ctx, managed, runningCfg)
+			log.Debug("validate cr spec delete", "observation", crSpecObservation)
+			if err != nil {
+				log.Debug("Cannot validate cr spec delete", "error", err)
+				record.Event(managed, event.Warning(reasonCannotValidateCrSpecDelete, err))
+				managed.SetConditions(nddv1.ReconcileError(errors.Wrap(err, errReconcileValidateCrSpecDelete)), nddv1.Unknown())
+				return reconcile.Result{Requeue: true}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
+			}
+			if !crSpecObservation.Success {
+				// The resource was not successfully applied to the device, the spec should change to retry
+				log.Debug("Validate cr spec delete failed", "requeue-after", time.Now().Add(shortWait))
+				managed.SetConditions(nddv1.Failed(crSpecObservation.Message))
+				return reconcile.Result{RequeueAfter: shortWait}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
+			}
 			if err := external.Delete(externalCtx, managed, ExternalObservation{}); err != nil {
 				// We'll hit this condition if we can't delete our external
 				// resource, for example if our provider credentials don't have
@@ -464,46 +496,44 @@ func (r *Reconciler) Reconcile(_ context.Context, req reconcile.Request) (reconc
 		return reconcile.Result{Requeue: false}, nil
 	}
 
-	runningCfg, err := external.GetRunningConfig(externalCtx, managed)
+	crSpecObservation, err := r.validator.ValidateCrSpecUpdate(ctx, managed, runningCfg)
 	if err != nil {
-		log.Debug("Cannot get running", "error", err)
-		record.Event(managed, event.Warning(reasonCannotGetRunningConfig, err))
-		managed.SetConditions(nddv1.ReconcileError(errors.Wrap(err, errReconcileValidateConfig)), nddv1.Unknown())
+		log.Debug("Validate cr spec update failed", "error", err, "requeue-after", time.Now().Add(shortWait))
+		record.Event(managed, event.Warning(reasonCannotValidateCrSpecUpdate, err))
+		managed.SetConditions(nddv1.ReconcileError(errors.Wrap(err, errReconcileValidateCrSpecUpdate)), nddv1.Unknown())
 		return reconcile.Result{Requeue: true}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
 	}
+	log.Debug("validate cr spec update", "observation", crSpecObservation)
 
-	if runningCfg == nil {
-		// When runningCfg is nil -> proxy cache is Not Ready
-		// When the cache is initializing we should not reconcile, so it is better to wait a reconciliation loop before retrying
-		log.Debug("External resource cache is not ready", "requeue-after", time.Now().Add(shortWait))
-		managed.SetConditions(nddv1.Unavailable())
-		return reconcile.Result{RequeueAfter: shortWait}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
-	}
-
-	validateConfigObservation, err := r.validator.ValidateConfig(ctx, managed, systemCfg, runningCfg)
-	if err != nil {
-		log.Debug("Validate config failed", "error", err, "requeue-after", time.Now().Add(shortWait))
-		record.Event(managed, event.Warning(reasonCannotValidateConfig, err))
-		managed.SetConditions(nddv1.ReconcileError(errors.Wrap(err, errReconcileValidateConfig)), nddv1.Unknown())
-		return reconcile.Result{Requeue: true}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
-	}
-	log.Debug("validateConfigObservation", "observation", validateConfigObservation)
-
-	if !validateConfigObservation.ValidateSucces {
+	if !crSpecObservation.Success {
 		// The validation of the resource configuration failed, so we need a new spec before retrying, so the timeut is rather long
 		log.Debug("resourceValidation failed", "requeue-after", time.Now().Add(mediumWait))
-		managed.SetConditions(nddv1.Failed(validateConfigObservation.Message))
+		managed.SetConditions(nddv1.Failed(crSpecObservation.Message))
 		return reconcile.Result{RequeueAfter: mediumWait}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
 	}
 
 	// Set Root Paths
-	managed.SetRootPaths(validateConfigObservation.RootPaths)
+	rootPaths, err := r.validator.GetRootPaths(ctx, managed)
+	if err != nil {
+		log.Debug("Get Root paths failed", "error", err, "requeue-after", time.Now().Add(shortWait))
+		record.Event(managed, event.Warning(reasonCannotGetRootPaths, err))
+		managed.SetConditions(nddv1.ReconcileError(errors.Wrap(err, errReconcileGetRootPaths)), nddv1.Unknown())
+		return reconcile.Result{Requeue: true}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
+	}
+	managed.SetRootPaths(rootPaths)
 
 	// check if the spec changed, if so we should need to update the external resource first before further processing
-	if len(validateConfigObservation.Deletes) > 0 || len(validateConfigObservation.Updates) > 0 {
+	crSpecDiffObservation, err := r.validator.GetCrSpecDiff(ctx, managed, systemCfg)
+	if err != nil {
+		log.Debug("Get cr spec diff failed", "error", err, "requeue-after", time.Now().Add(shortWait))
+		record.Event(managed, event.Warning(reasonCannotGetCrSpecDiff, err))
+		managed.SetConditions(nddv1.ReconcileError(errors.Wrap(err, errReconcileGetCrSpecDiff)), nddv1.Unknown())
+		return reconcile.Result{Requeue: true}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
+	}
+	if len(crSpecDiffObservation.Deletes) > 0 || len(crSpecDiffObservation.Updates) > 0 {
 		if err := external.Update(externalCtx, managed, ExternalObservation{
-			Deletes: validateConfigObservation.Deletes,
-			Updates: validateConfigObservation.Updates,
+			Deletes: crSpecDiffObservation.Deletes,
+			Updates: crSpecDiffObservation.Updates,
 		}); err != nil {
 			// We'll hit this condition if we can't update our external resource,
 			log.Debug("Cannot update external resource")
@@ -518,10 +548,16 @@ func (r *Reconciler) Reconcile(_ context.Context, req reconcile.Request) (reconc
 		record.Event(managed, event.Normal(reasonUpdated, "Successfully requested update of external resource"))
 		managed.SetConditions(nddv1.ReconcileSuccess(), nddv1.Updating())
 		return reconcile.Result{RequeueAfter: veryShortWait}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
-	}	
+	}
 
-	//log.Debug("Observation", "observation", observation)
-	if !validateResourceObservation.Exists {
+	if crObservation.Failed {
+		// The resource was not successfully applied to the device, the spec should change to retry
+		log.Debug("External resource cache failed", "requeue-after", time.Now().Add(shortWait))
+		managed.SetConditions(nddv1.Failed(crObservation.Message))
+		return reconcile.Result{RequeueAfter: shortWait}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
+	}
+
+	if !crObservation.Exists {
 		// transaction was false
 		if err := external.Create(externalCtx, managed, ExternalObservation{}); err != nil {
 			// We'll hit this condition if the grpc connection fails.
@@ -545,8 +581,15 @@ func (r *Reconciler) Reconcile(_ context.Context, req reconcile.Request) (reconc
 		return reconcile.Result{RequeueAfter: veryShortWait}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
 	}
 
-	observation, err := external.Observe(externalCtx, managed, runningCfg)
-	log.Debug("Observation", "Observation", observation)
+	crActualDiffObservation, err := r.validator.GetCrActualDiff(ctx, managed, runningCfg)
+	if err != nil {
+		log.Debug("Get cr spec diff failed", "error", err, "requeue-after", time.Now().Add(shortWait))
+		record.Event(managed, event.Warning(reasonCannotGetCrActualDiff, err))
+		managed.SetConditions(nddv1.ReconcileError(errors.Wrap(err, errReconcileGetCrActualDiff)), nddv1.Unknown())
+		return reconcile.Result{Requeue: true}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
+	}
+
+	log.Debug("GetCrActualDiff", "observation", crActualDiffObservation)
 	if err != nil {
 		// We'll usually hit this case if our Provider credentials are invalid
 		// or insufficient for observing the external resource type we're
@@ -560,10 +603,10 @@ func (r *Reconciler) Reconcile(_ context.Context, req reconcile.Request) (reconc
 		return reconcile.Result{Requeue: true}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
 	}
 	// resource exists
-	if !observation.HasData {
+	if !crActualDiffObservation.HasData {
 		// the resource got deleted, so we need to recreate the resource
 		// transaction was true
-		if err := external.Create(externalCtx, managed, observation); err != nil {
+		if err := external.Create(externalCtx, managed, ExternalObservation{}); err != nil {
 			// We'll hit this condition if the grpc connection fails.
 			// If this is the first time we encounter this
 			// issue we'll be requeued implicitly when we update our status with
@@ -583,11 +626,13 @@ func (r *Reconciler) Reconcile(_ context.Context, req reconcile.Request) (reconc
 		record.Event(managed, event.Normal(reasonCreated, "Successfully requested creation of external resource"))
 		managed.SetConditions(nddv1.ReconcileSuccess())
 		return reconcile.Result{RequeueAfter: veryShortWait}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
-
 	}
 
-	if !observation.IsUpToDate {
-		if err := external.Update(externalCtx, managed, observation); err != nil {
+	if !crActualDiffObservation.IsUpToDate {
+		if err := external.Update(externalCtx, managed, ExternalObservation{
+			Updates: crActualDiffObservation.Updates,
+			Deletes: crActualDiffObservation.Deletes,
+		}); err != nil {
 			// We'll hit this condition if we can't update our external resource,
 			log.Debug("Cannot update external resource")
 			record.Event(managed, event.Warning(reasonCannotUpdate, err))

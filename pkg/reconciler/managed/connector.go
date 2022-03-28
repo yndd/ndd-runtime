@@ -56,15 +56,15 @@ type ExternalClient interface {
 	// if any. Observe implementations must not modify the external resource,
 	// but may update the supplied Managed resource to reflect the state of the
 	// external resource.
-	Observe(ctx context.Context, mg resource.Managed, runningCfg []byte) (ExternalObservation, error)
+	//Observe(ctx context.Context, mg resource.Managed, runningCfg []byte) (ExternalObservation, error)
 
 	// Create an external resource per the specifications of the supplied
-	// Managed resource. Called when Observe reports that the associated
+	// Managed resource. Called when thr diff reports that the associated
 	// external resource does not exist.
 	Create(ctx context.Context, mg resource.Managed, obs ExternalObservation) error
 
 	// Update the external resource represented by the supplied Managed
-	// resource, if necessary. Called unless Observe reports that the
+	// resource, if necessary. Called when the diff reports that the
 	// associated external resource is up to date.
 	Update(ctx context.Context, mg resource.Managed, obs ExternalObservation) error
 
@@ -80,14 +80,14 @@ type ExternalClient interface {
 	// the running device proxy cache
 	GetRunningConfig(ctx context.Context, mg resource.Managed) ([]byte, error)
 
-	// Close
+	// Close the gnmi connection to the system proxy cache
 	Close()
 }
 
 // ExternalClientFns are a series of functions that satisfy the ExternalClient
 // interface.
 type ExternalClientFns struct {
-	ObserveFn          func(ctx context.Context, mg resource.Managed, runningCfg []byte) (ExternalObservation, error)
+	//ObserveFn          func(ctx context.Context, mg resource.Managed, runningCfg []byte) (ExternalObservation, error)
 	CreateFn           func(ctx context.Context, mg resource.Managed, obs ExternalObservation) error
 	UpdateFn           func(ctx context.Context, mg resource.Managed, obs ExternalObservation) error
 	DeleteFn           func(ctx context.Context, mg resource.Managed, obs ExternalObservation) error
@@ -98,9 +98,9 @@ type ExternalClientFns struct {
 
 // Observe the external resource the supplied Managed resource represents, if
 // any.
-func (e ExternalClientFns) Observe(ctx context.Context, mg resource.Managed, runningCfg []byte) (ExternalObservation, error) {
-	return e.ObserveFn(ctx, mg, runningCfg)
-}
+//func (e ExternalClientFns) Observe(ctx context.Context, mg resource.Managed, runningCfg []byte) (ExternalObservation, error) {
+//	return e.ObserveFn(ctx, mg, runningCfg)
+//}
 
 // Create an external resource per the specifications of the supplied Managed
 // resource.
@@ -147,9 +147,9 @@ func (c *NopConnecter) Connect(_ context.Context, _ resource.Managed) (ExternalC
 type NopClient struct{}
 
 // Observe does nothing. It returns an empty ExternalObservation and no error.
-func (c *NopClient) Observe(ctx context.Context, mg resource.Managed, runningCfg []byte) (ExternalObservation, error) {
-	return ExternalObservation{}, nil
-}
+//func (c *NopClient) Observe(ctx context.Context, mg resource.Managed, runningCfg []byte) (ExternalObservation, error) {
+//	return ExternalObservation{}, nil
+//}
 
 // Create does nothing. It returns an empty ExternalCreation and no error.
 func (c *NopClient) Create(ctx context.Context, mg resource.Managed, obs ExternalObservation) error {
@@ -183,31 +183,15 @@ func (c *NopClient) Close() {}
 // An ExternalObservation is the result of an observation of an external
 // resource.
 type ExternalObservation struct {
-	// indicated if the cache is exhausted or not, during cache startup this can occur
-	// when the cache/device is overloaded
-	Exhausted bool
-	// indicated if the cache is ready or not, during cache startup this can occur
-	// when the cache is still initializing
-	Ready bool
-	// ActionExecuted the respective action on the resource was executed, so we can validate the status
-	Pending bool
-	// ResourceExists must be true if a corresponding external resource exists
-	// for the managed resource.
-	Exists bool
-	// indicates if the resource spec was not successfully applied to the device
-	// unless the resourceSpec changes the transaction would not be successfull
-	// we dont try to reconcile unless the spec changed
-	Failed bool
-	// Provides additional information why a failure occurs
-	Message string
-	// ResourceHasData can be true when a managed resource is created, but the
+	// HasData can be true when a managed resource is created, but the
 	// device had already data in that resource. The data needs to get aligned
-	// with the intended resource data
+	// with the intended MR data
 	HasData bool
-	// ResourceUpToDate should be true if the corresponding external resource
-	// appears to be up-to-date with the resourceSpec
+	// IsUpToDate should be true if the corresponding MR
+	// appears to be up-to-date with the cr spec
 	IsUpToDate bool
-	// when the resource is not up to date these 2 parameter determine what to do to realign the resource to the spec
+	// when the resource is not up to date these 2 parameter determine what to do to realign
+	// the external resource on the device to the cr spec
 	Deletes []*gnmi.Path
 	Updates []*gnmi.Update
 }
