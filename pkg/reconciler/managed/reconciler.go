@@ -409,7 +409,6 @@ func (r *Reconciler) Reconcile(_ context.Context, req reconcile.Request) (reconc
 	if crObservation.Pending {
 		//Action was not yet executed so there is no point in doing further reconciliation
 		log.Debug("Action is not yet executed", "requeue-after", time.Now().Add(veryShortWait))
-		managed.SetConditions(nddv1.Unavailable())
 		return reconcile.Result{RequeueAfter: veryShortWait}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
 	}
 
@@ -474,7 +473,7 @@ func (r *Reconciler) Reconcile(_ context.Context, req reconcile.Request) (reconc
 			// block and try again.
 			// log.Debug("Successfully requested deletion of external resource")
 			record.Event(managed, event.Normal(reasonDeleted, "Successfully requested deletion of external resource"))
-			managed.SetConditions(nddv1.ReconcileSuccess())
+			managed.SetConditions(nddv1.ReconcileSuccess(), nddv1.Deleting())
 			return reconcile.Result{RequeueAfter: veryShortWait}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
 		}
 
