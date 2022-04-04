@@ -19,7 +19,7 @@ package utils
 // BoolPtr return pointer to boolean
 func BoolPtr(b bool) *bool { return &b }
 
-// StringPtr return pointer to boolean
+// StringPtr return pointer to string
 func StringPtr(s string) *string { return &s }
 
 // IntPtr return pointer to int
