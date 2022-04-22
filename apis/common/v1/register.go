@@ -16,6 +16,7 @@ limitations under the License.
 
 package v1
 
+/*
 import "github.com/openconfig/gnmi/proto/gnmi"
 
 var RegisterPath = &gnmi.Path{
@@ -32,7 +33,7 @@ type Register struct {
 	// MatchString defines the string to match the devices for discovery
 	// +optional
 	MatchString string `json:"matchString,omitempty"`
-	
+
 	// Registrations defines the Registrations the device driver subscribes to for config change notifications
 	// +optional
 	Subscriptions []string `json:"subscriptions,omitempty"`
@@ -55,3 +56,4 @@ func (r *Register) GetSubscriptions() []string {
 func (r *Register) SetSubscriptions(s []string) {
 	r.Subscriptions = s
 }
+*/

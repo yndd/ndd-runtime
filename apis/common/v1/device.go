@@ -16,6 +16,7 @@ limitations under the License.
 
 package v1
 
+/*
 type DeviceType string
 
 const (
@@ -23,3 +24,4 @@ const (
 )
 
 func DeviceTypePtr(c DeviceType) *DeviceType { return &c }
+*/
