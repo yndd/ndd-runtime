@@ -23,7 +23,7 @@ import (
 	"time"
 
 	nddv1 "github.com/yndd/ndd-runtime/apis/common/v1"
-	"github.com/yndd/ndd-yang/pkg/parser"
+	//"github.com/yndd/ndd-yang/pkg/parser"
 
 	"github.com/pkg/errors"
 	"github.com/yndd/ndd-runtime/pkg/event"
@@ -111,7 +111,7 @@ type Reconciler struct {
 
 	pollInterval time.Duration
 	timeout      time.Duration
-	parser       parser.Parser
+	//parser       parser.Parser
 
 	// The below structs embed the set of interfaces used to implement the
 	// managed resource reconciler. We do this primarily for readability, so
@@ -215,11 +215,13 @@ func WithRecorder(er event.Recorder) ReconcilerOption {
 	}
 }
 
+/*
 func WithParser(l logging.Logger) ReconcilerOption {
 	return func(r *Reconciler) {
 		r.parser = *parser.NewParser(parser.WithLogger(l))
 	}
 }
+*/
 
 // NewReconciler returns a Reconciler that reconciles managed resources of the
 // supplied ManagedKind with resources in an external network device.
