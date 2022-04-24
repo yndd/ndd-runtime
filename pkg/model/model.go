@@ -6,10 +6,13 @@ import (
 	"reflect"
 	"sort"
 
+	"github.com/casbin/casbin/v2/model"
 	"github.com/openconfig/goyang/pkg/yang"
 	"github.com/openconfig/ygot/ygot"
 	"github.com/openconfig/ygot/ytypes"
+	"github.com/yndd/nddp-srl3/pkg/ygotsrl"
 
+	"github.com/openconfig/gnmi/proto/gnmi"
 	pb "github.com/openconfig/gnmi/proto/gnmi"
 )
 
@@ -59,4 +62,16 @@ func (m *Model) SupportedModels() []string {
 	}
 	sort.Strings(mDesc)
 	return mDesc
+}
+
+func GetModelDats(cap []*gnmi.ModelData) []*gnmi.ModelData {
+	modelData := make([]*gnmi.ModelData, 0)
+	for _, c := range cap {
+		modelData = append(modelData, &gnmi.ModelData{
+			Name:         c.GetName(),
+			Organization: c.GetOrganization(),
+			Version:      c.GetVersion(),
+		})
+	}
+	return modelData
 }
