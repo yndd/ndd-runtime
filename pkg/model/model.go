@@ -62,7 +62,7 @@ func (m *Model) SupportedModels() []string {
 	return mDesc
 }
 
-func GetModelDats(cap []*gnmi.ModelData) []*gnmi.ModelData {
+func GetModelData(cap []*gnmi.ModelData) []*gnmi.ModelData {
 	modelData := make([]*gnmi.ModelData, 0)
 	for _, c := range cap {
 		modelData = append(modelData, &gnmi.ModelData{
