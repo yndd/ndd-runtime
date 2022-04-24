@@ -6,11 +6,9 @@ import (
 	"reflect"
 	"sort"
 
-	"github.com/casbin/casbin/v2/model"
 	"github.com/openconfig/goyang/pkg/yang"
 	"github.com/openconfig/ygot/ygot"
 	"github.com/openconfig/ygot/ytypes"
-	"github.com/yndd/nddp-srl3/pkg/ygotsrl"
 
 	"github.com/openconfig/gnmi/proto/gnmi"
 	pb "github.com/openconfig/gnmi/proto/gnmi"
