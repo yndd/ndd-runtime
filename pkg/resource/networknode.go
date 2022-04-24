@@ -16,6 +16,7 @@ limitations under the License.
 
 package resource
 
+/*
 import (
 	"context"
 
@@ -93,3 +94,4 @@ func (u *NetworkNodeUsageTracker) Track(ctx context.Context, mg Managed) error {
 	)
 	return errors.Wrap(Ignore(IsNotAllowed, err), errApplyNNU)
 }
+*/
