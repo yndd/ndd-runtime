@@ -40,11 +40,9 @@ func (m *Model) NewConfigStruct(jsonConfig []byte, validate bool) (ygot.Validate
 		return nil, errors.New("root node is not a ygot.ValidatedGoStruct")
 	}
 	if jsonConfig != nil {
-		fmt.Printf("jsonConfig: %s\n", string(jsonConfig))
 		if err := m.JsonUnmarshaler(jsonConfig, rootStruct); err != nil {
 			return nil, err
 		}
-		fmt.Printf("rootStruct: %v\n", rootStruct)
 		if validate {
 			if err := rootStruct.Validate(); err != nil {
 				return nil, err
