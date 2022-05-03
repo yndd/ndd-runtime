@@ -346,23 +346,23 @@ func (r *Reconciler) Reconcile(_ context.Context, req reconcile.Request) (reconc
 		}
 		// Set validation status to unknown if the target is not found
 		managed.SetConditions(nddv1.RootPathValidationUnknown())
-		// if the target was not found it means the network node is not defined or not in a status
+		// if the target was not found it means the target is not defined or not in a status
 		// to handle the reconciliation. A reconcilation retry will be triggered
 		if strings.Contains(fmt.Sprintf("%s", err), "not found") ||
 			strings.Contains(fmt.Sprintf("%s", err), "not configured") ||
 			strings.Contains(fmt.Sprintf("%s", err), "not ready") {
-			//log.Debug("network node not found")
+			//log.Debug("target not found")
 			record.Event(managed, event.Warning(reasonCannotGetValideTarget, err))
 			managed.SetConditions(nddv1.TargetNotFound(), nddv1.Unavailable(), nddv1.ReconcileSuccess())
 			return reconcile.Result{RequeueAfter: shortWait}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
 		}
-		//log.Debug("network node error different from not found")
+		//log.Debug("target error different from not found")
 		// We'll usually hit this case if our Provider or its secret are missing
 		// or invalid. If this is first time we encounter this issue we'll be
 		// requeued implicitly when we update our status with the new error
 		// condition. If not, we requeue explicitly, which will trigger
 		// backoff.
-		//log.Debug("Cannot connect to network node device driver", "error", err)
+		//log.Debug("Cannot connect to target device driver", "error", err)
 		record.Event(managed, event.Warning(reasonCannotConnect, err))
 		managed.SetConditions(nddv1.ReconcileError(errors.Wrap(err, errReconcileConnect)), nddv1.Unavailable(), nddv1.TargetFound())
 		return reconcile.Result{Requeue: true}, errors.Wrap(r.client.Status().Update(ctx, managed), errUpdateManagedStatus)
@@ -370,7 +370,7 @@ func (r *Reconciler) Reconcile(_ context.Context, req reconcile.Request) (reconc
 
 	defer external.Close()
 
-	// given we can connect to the network node device driver, the target is found
+	// given we can connect to the target device driver, the target is found
 	// update condition and update the status field
 	managed.SetConditions(nddv1.TargetFound())
 

@@ -30,8 +30,8 @@ import (
 // A ManagedKind contains the type metadata for a kind of managed resource.
 type ManagedKind schema.GroupVersionKind
 
-// NetworkNodeKinds contains the type metadata for a kind of network node.
-type NetworkNodeKinds struct {
+// TargetKinds contains the type metadata for a kind of target.
+type TargetKinds struct {
 	Config    schema.GroupVersionKind
 	Usage     schema.GroupVersionKind
 	UsageList schema.GroupVersionKind

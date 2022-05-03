@@ -16,21 +16,20 @@ limitations under the License.
 
 package resource
 
-/*
 import (
 	"context"
 
+	"github.com/pkg/errors"
 	nddv1 "github.com/yndd/ndd-runtime/apis/common/v1"
 	"github.com/yndd/ndd-runtime/pkg/meta"
-	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 const (
-	errMissingNNRef = "managed resource does not reference a NetworkNode"
-	errApplyNNU     = "cannot apply NetworkNodeUsage"
+	errMissingTargetRef = "managed resource does not reference a target reference"
+	errApplyTargetUsage = "cannot apply TargetUsage"
 )
 
 type errMissingRef struct{ error }
@@ -51,35 +50,35 @@ func (fn TrackerFn) Track(ctx context.Context, mg Managed) error {
 	return fn(ctx, mg)
 }
 
-// A NetworkNodeUsageTracker tracks usages of a NetworkNode by creating or
-// updating the appropriate NetworkNodeUsage.
-type NetworkNodeUsageTracker struct {
+// A TargetUsageTracker tracks usages of a Target by creating or
+// updating the appropriate TargetUsage.
+type TargetUsageTracker struct {
 	c  Applicator
-	of NetworkNodeUsage
+	of TargetUsage
 }
 
-// NewNetworkNodeUsageTracker creates a NetworkNodeUsageTracker.
-func NewNetworkNodeUsageTracker(c client.Client, of NetworkNodeUsage) *NetworkNodeUsageTracker {
-	return &NetworkNodeUsageTracker{c: NewAPIUpdatingApplicator(c), of: of}
+// NewTargetUsageTracker creates a TargetUsageTracker.
+func NewTargetUsageTracker(c client.Client, of TargetUsage) *TargetUsageTracker {
+	return &TargetUsageTracker{c: NewAPIUpdatingApplicator(c), of: of}
 }
 
-// Track that the supplied Managed resource is using the NetworkNode it
-// references by creating or updating a NetworkNodeUsage. Track should be
-// called _before_ attempting to use the NetworkNode. This ensures the
+// Track that the supplied Managed resource is using the Target it
+// references by creating or updating a TargetUsage. Track should be
+// called _before_ attempting to use the Target. This ensures the
 // managed resource's usage is updated if the managed resource is updated to
-// reference a misconfigured NetworkNode.
-func (u *NetworkNodeUsageTracker) Track(ctx context.Context, mg Managed) error {
-	pcu := u.of.DeepCopyObject().(NetworkNodeUsage)
+// reference a misconfigured Target.
+func (u *TargetUsageTracker) Track(ctx context.Context, mg Managed) error {
+	pcu := u.of.DeepCopyObject().(TargetUsage)
 	gvk := mg.GetObjectKind().GroupVersionKind()
-	ref := mg.GetNetworkNodeReference()
+	ref := mg.GetTargetReference()
 	if ref == nil {
-		return errMissingRef{errors.New(errMissingNNRef)}
+		return errMissingRef{errors.New(errMissingTargetRef)}
 	}
 
 	pcu.SetName(string(mg.GetUID()))
-	pcu.SetLabels(map[string]string{nddv1.LabelKeyNetworkNodeName: ref.Name})
+	pcu.SetLabels(map[string]string{nddv1.LabelKeyTargetName: ref.Name})
 	pcu.SetOwnerReferences([]metav1.OwnerReference{meta.AsController(meta.TypedReferenceTo(mg, gvk))})
-	pcu.SetNetworkNodeReference(nddv1.Reference{Name: ref.Name})
+	pcu.SetTargetReference(nddv1.Reference{Name: ref.Name})
 	pcu.SetResourceReference(nddv1.TypedReference{
 		APIVersion: gvk.GroupVersion().String(),
 		Kind:       gvk.Kind,
@@ -89,9 +88,8 @@ func (u *NetworkNodeUsageTracker) Track(ctx context.Context, mg Managed) error {
 	err := u.c.Apply(ctx, pcu,
 		MustBeControllableBy(mg.GetUID()),
 		AllowUpdateIf(func(current, _ runtime.Object) bool {
-			return current.(NetworkNodeUsage).GetNetworkNodeReference() != pcu.GetNetworkNodeReference()
+			return current.(TargetUsage).GetTargetReference() != pcu.GetTargetReference()
 		}),
 	)
-	return errors.Wrap(Ignore(IsNotAllowed, err), errApplyNNU)
+	return errors.Wrap(Ignore(IsNotAllowed, err), errApplyTargetUsage)
 }
-*/

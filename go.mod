@@ -6,6 +6,8 @@ require (
 	github.com/go-logr/logr v0.4.0
 	github.com/karimra/gnmic v0.22.1
 	github.com/openconfig/gnmi v0.0.0-20210914185457-51254b657b7d
+	github.com/openconfig/goyang v1.0.0
+	github.com/openconfig/ygot v0.15.1
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/afero v1.6.0
 	github.com/yndd/ndd-yang v0.2.0

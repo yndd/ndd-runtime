@@ -28,40 +28,40 @@ type adder interface {
 	Add(item interface{})
 }
 
-// EnqueueRequestForNetworkNode enqueues a reconcile.Request for a referenced
-// NetworkNode.
-type EnqueueRequestForNetworkNode struct{}
+// EnqueueRequestForTarget enqueues a reconcile.Request for a referenced
+// Target.
+type EnqueueRequestForTarget struct{}
 
 // Create adds a NamespacedName for the supplied CreateEvent if its Object is a
-// NetworkNodeReferencer.
-func (e *EnqueueRequestForNetworkNode) Create(evt event.CreateEvent, q workqueue.RateLimitingInterface) {
-	addNetworkNode(evt.Object, q)
+// TargetReferencer.
+func (e *EnqueueRequestForTarget) Create(evt event.CreateEvent, q workqueue.RateLimitingInterface) {
+	addTarget(evt.Object, q)
 }
 
 // Update adds a NamespacedName for the supplied UpdateEvent if its Objects are
-// a NetworkNodeReferencer.
-func (e *EnqueueRequestForNetworkNode) Update(evt event.UpdateEvent, q workqueue.RateLimitingInterface) {
-	addNetworkNode(evt.ObjectOld, q)
-	addNetworkNode(evt.ObjectNew, q)
+// a TargetReferencer.
+func (e *EnqueueRequestForTarget) Update(evt event.UpdateEvent, q workqueue.RateLimitingInterface) {
+	addTarget(evt.ObjectOld, q)
+	addTarget(evt.ObjectNew, q)
 }
 
 // Delete adds a NamespacedName for the supplied DeleteEvent if its Object is a
-// NetworkNodeReferencer.
-func (e *EnqueueRequestForNetworkNode) Delete(evt event.DeleteEvent, q workqueue.RateLimitingInterface) {
-	addNetworkNode(evt.Object, q)
+// TargetReferencer.
+func (e *EnqueueRequestForTarget) Delete(evt event.DeleteEvent, q workqueue.RateLimitingInterface) {
+	addTarget(evt.Object, q)
 }
 
 // Generic adds a NamespacedName for the supplied GenericEvent if its Object is
-// a NetworkNodeReferencer.
-func (e *EnqueueRequestForNetworkNode) Generic(evt event.GenericEvent, q workqueue.RateLimitingInterface) {
-	addNetworkNode(evt.Object, q)
+// a TargetReferencer.
+func (e *EnqueueRequestForTarget) Generic(evt event.GenericEvent, q workqueue.RateLimitingInterface) {
+	addTarget(evt.Object, q)
 }
 
-func addNetworkNode(obj runtime.Object, queue adder) {
-	pcr, ok := obj.(RequiredNetworkNodeReferencer)
+func addTarget(obj runtime.Object, queue adder) {
+	pcr, ok := obj.(RequiredTargetReferencer)
 	if !ok {
 		return
 	}
 
-	queue.Add(reconcile.Request{NamespacedName: types.NamespacedName{Name: pcr.GetNetworkNodeReference().Name}})
+	queue.Add(reconcile.Request{NamespacedName: types.NamespacedName{Name: pcr.GetTargetReference().Name}})
 }

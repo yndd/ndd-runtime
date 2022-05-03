@@ -40,28 +40,25 @@ type RootPaths interface {
 	GetHierPaths() map[string][]string
 }
 
-type ExternalLeafRefs interface {
-	SetExternalLeafRefs(externalResourceNames []string)
-	GetExternalLeafRefs() []string
-}
-
 // A Target may have targets
+/*
 type Target interface {
 	SetTarget(target []string)
 	GetTarget() []string
 }
+*/
 
-// A NetworkNodeReferencer may reference a Network Node resource.
-type NetworkNodeReferencer interface {
-	GetNetworkNodeReference() *nddv1.Reference
-	SetNetworkNodeReference(p *nddv1.Reference)
+// A TargetReferencer may reference a target resource.
+type TargetReferencer interface {
+	GetTargetReference() *nddv1.Reference
+	SetTargetReference(p *nddv1.Reference)
 }
 
-// A RequiredNetworkNodeReferencer may reference a network node config resource.
-// Unlike NetworkNodeReferencer, the reference is required (i.e. not nil).
-type RequiredNetworkNodeReferencer interface {
-	GetNetworkNodeReference() nddv1.Reference
-	SetNetworkNodeReference(p nddv1.Reference)
+// A RequiredTargetReferencer may reference a target config resource.
+// Unlike TargetReferencer, the reference is required (i.e. not nil).
+type RequiredTargetReferencer interface {
+	GetTargetReference() nddv1.Reference
+	SetTargetReference(p nddv1.Reference)
 }
 
 // A RequiredTypedResourceReferencer can reference a resource.
@@ -99,7 +96,7 @@ type Object interface {
 type Managed interface {
 	Object
 
-	NetworkNodeReferencer
+	TargetReferencer
 	Orphanable
 	Deployment
 
@@ -115,28 +112,28 @@ type ManagedList interface {
 	GetItems() []Managed
 }
 
-// A NetworkNode configures a NetworkNode Device Driver.
-type NetworkNode interface {
+// A Target configures a Target Device Driver.
+type Target interface {
 	Object
 
 	UserCounter
 	Conditioned
 }
 
-// A NetworkNodeUsage indicates a usage of a network node config.
-type NetworkNodeUsage interface {
+// A TargetUsage indicates a usage of a target config.
+type TargetUsage interface {
 	Object
 
-	RequiredNetworkNodeReferencer
+	RequiredTargetReferencer
 	RequiredTypedResourceReferencer
 }
 
-// A NetworkNodeUsageList is a list of network node usages.
-type NetworkNodeUsageList interface {
+// A TargetUsageList is a list of targets usages.
+type TargetUsageList interface {
 	client.ObjectList
 
-	// GetItems returns the list of network node usages.
-	GetItems() []NetworkNodeUsage
+	// GetItems returns the list of target usages.
+	GetItems() []TargetUsage
 }
 
 // A Finalizer manages the finalizers on the resource.
