@@ -33,18 +33,14 @@ type Conditioned interface {
 	GetCondition(ck nddv1.ConditionKind) nddv1.Condition
 }
 
+type HealthConditioned interface {
+	SetHealthConditions(c nddv1.HealthConditionedStatus)
+}
+
 type RootPaths interface {
 	SetRootPaths(rootPaths []string)
 	GetRootPaths() []string
 }
-
-// A Target may have targets
-/*
-type Target interface {
-	SetTarget(target []string)
-	GetTarget() []string
-}
-*/
 
 // A TargetReferencer may reference a target resource.
 type TargetReferencer interface {
@@ -65,16 +61,12 @@ type RequiredTypedResourceReferencer interface {
 	GetResourceReference() nddv1.TypedReference
 }
 
-// An Orphanable resource may specify a DeletionPolicy.
-type Orphanable interface {
-	SetDeletionPolicy(p nddv1.DeletionPolicy)
+// An Lifecycle resource may specify a DeletionPolicy and/or DeploymentPolicy.
+type Lifecycle interface {
 	GetDeletionPolicy() nddv1.DeletionPolicy
-}
-
-// An Orphanable resource may specify a DeletionPolicy.
-type Deployment interface {
-	SetDeploymentPolicy(p nddv1.DeploymentPolicy)
+	SetDeletionPolicy(p nddv1.DeletionPolicy)
 	GetDeploymentPolicy() nddv1.DeploymentPolicy
+	SetDeploymentPolicy(p nddv1.DeploymentPolicy)
 }
 
 // A UserCounter can count how many users it has.
@@ -95,10 +87,10 @@ type Managed interface {
 	Object
 
 	TargetReferencer
-	Orphanable
-	Deployment
+	Lifecycle
 
 	Conditioned
+	HealthConditioned
 	RootPaths
 }
 
