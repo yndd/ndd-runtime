@@ -16,12 +16,20 @@ limitations under the License.
 
 package v1
 
-/*
-type DeviceType string
+type Tag struct {
+	Key   *string `json:"key,omitempty"`
+	Value *string `json:"value,omitempty"`
+}
 
-const (
-	DeviceTypeUnknown DeviceType = ""
-)
+func (t *Tag) GetTag() map[string]string {
+	tag := make(map[string]string)
+	tag[*t.Key] = *t.Value
+	return tag
+}
 
-func DeviceTypePtr(c DeviceType) *DeviceType { return &c }
-*/
+// Equal returns true if the tag is identical to the supplied tag,
+// ignoring the LastTransitionTime.
+func (t Tag) Equal(other Tag) bool {
+	return *t.Key == *other.Key &&
+		*t.Value == *other.Value
+}

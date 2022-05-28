@@ -74,30 +74,25 @@ func (obj *TypedReference) GetObjectKind() schema.ObjectKind { return obj }
 
 // A ResourceSpec defines the desired state of a managed resource.
 type ResourceSpec struct {
-	// Active specifies if the managed resource is active or not
-	// +kubebuilder:default=Active
-	DeploymentPolicy DeploymentPolicy `json:"deploymentPolicy,omitempty"`
+	// Lifecycle determines the deletion and deployment lifecycle policies the resource
+	// will follow
+	Lifecycle Lifecycle `json:"lifecycle,omitempty"`
 
 	// TargetReference specifies which target will be used to
-	// create, observe, update, and delete this managed resource
-	TargetReference *Reference `json:"targetRef"`
-
-	// DeletionPolicy specifies what will happen to the underlying external
-	// when this managed resource is deleted - either "Delete" or "Orphan" the
-	// external resource.
-	// +optional
-	// +kubebuilder:default=Delete
-	DeletionPolicy DeletionPolicy `json:"deletionPolicy,omitempty"`
+	// perform crud operations for the managed resource
+	TargetReference *Reference `json:"targetRef,omitempty"`
 }
 
 // ResourceStatus represents the observed state of a managed resource.
 type ResourceStatus struct {
 	// the condition status
 	ConditionedStatus `json:",inline"`
+	// the health condition status
+	Health HealthConditionedStatus `json:"health,omitempty"`
+	// the oda info
+	OdaInfo `json:",inline"`
 	// rootPaths define the rootPaths of the cr, used to monitor the resource status
 	RootPaths []string `json:"rootPaths,omitempty"`
-	// HierPaths tracks the hierarchical paths of the CR based on adjacent resources
-	HierPaths map[string][]string `json:"hierPaths,omitempty"`
 }
 
 // A TargetStatus defines the observed status of a target.

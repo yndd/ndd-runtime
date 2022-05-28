@@ -24,12 +24,12 @@ import (
 type Logger interface {
 	// Info logs a message with optional structured data. Structured data must
 	// be supplied as an array that alternates between string keys and values of
-	// an arbitrary type. 
+	// an arbitrary type.
 	Info(msg string, keysAndValues ...interface{})
 
 	// Debug logs a message with optional structured data. Structured data must
 	// be supplied as an array that alternates between string keys and values of
-	// an arbitrary type. 
+	// an arbitrary type.
 	Debug(msg string, keysAndValues ...interface{})
 
 	// WithValues returns a Logger that will include the supplied structured

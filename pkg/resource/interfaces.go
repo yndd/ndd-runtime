@@ -36,8 +36,6 @@ type Conditioned interface {
 type RootPaths interface {
 	SetRootPaths(rootPaths []string)
 	GetRootPaths() []string
-	SetHierPaths(rootPaths map[string][]string)
-	GetHierPaths() map[string][]string
 }
 
 // A Target may have targets

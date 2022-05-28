@@ -16,6 +16,20 @@ limitations under the License.
 
 package v1
 
+type Lifecycle struct {
+	// Active specifies if the managed resource is active or plannned
+	// +kubebuilder:validation:Enum=`active`;`planned`
+	// +kubebuilder:default=active
+	DeploymentPolicy DeploymentPolicy `json:"deploymentPolicy,omitempty"`
+
+	// DeletionPolicy specifies what will happen to the underlying external
+	// when this managed resource is deleted - either "delete" or "orphan" the
+	// external resource.
+	// +kubebuilder:validation:Enum=`delete`;`orphan`
+	// +kubebuilder:default=delete
+	DeletionPolicy DeletionPolicy `json:"deletionPolicy,omitempty"`
+}
+
 // A DeploymentPolicy determines what should happen to the underlying external
 // resource when a managed resource is deployed.
 // +kubebuilder:validation:Enum=Active;Planned
@@ -23,10 +37,10 @@ type DeploymentPolicy string
 
 const (
 	// DeploymentActive means the external resource will deployed
-	DeploymentActive DeploymentPolicy = "Active"
+	DeploymentActive DeploymentPolicy = "active"
 
 	// DeploymentPlanned means the resource identifier will be allocated but not deployed
-	DeploymentPlanned DeploymentPolicy = "Planned"
+	DeploymentPlanned DeploymentPolicy = "planned"
 )
 
 // A DeletionPolicy determines what should happen to the underlying external
@@ -37,9 +51,9 @@ type DeletionPolicy string
 const (
 	// DeletionOrphan means the external resource will orphaned when its managed
 	// resource is deleted.
-	DeletionOrphan DeletionPolicy = "Orphan"
+	DeletionOrphan DeletionPolicy = "orphan"
 
 	// DeletionDelete means both the  external resource will be deleted when its
 	// managed resource is deleted.
-	DeletionDelete DeletionPolicy = "Delete"
+	DeletionDelete DeletionPolicy = "delete"
 )

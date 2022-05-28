@@ -107,6 +107,7 @@ func (e *NopValidator) GetCrActualDiff(ctx context.Context, mg resource.Managed,
 func (e *NopValidator) GetRootPaths(ctx context.Context, mg resource.Managed) ([]string, error) {
 	return []string{}, nil
 }
+
 type CrObservation struct {
 	// indicates if the device is exhausted or not, this can happen when too many api calls
 	// occured towards the device

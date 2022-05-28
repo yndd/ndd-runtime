@@ -177,5 +177,3 @@ type ExternalObservation struct {
 	// appears to be up-to-date with the cr spec
 	IsUpToDate bool
 }
-
-
