@@ -32,7 +32,6 @@ type Lifecycle struct {
 
 // A DeploymentPolicy determines what should happen to the underlying external
 // resource when a managed resource is deployed.
-// +kubebuilder:validation:Enum=Active;Planned
 type DeploymentPolicy string
 
 const (
@@ -45,7 +44,6 @@ const (
 
 // A DeletionPolicy determines what should happen to the underlying external
 // resource when a managed resource is deleted.
-// +kubebuilder:validation:Enum=Orphan;Delete
 type DeletionPolicy string
 
 const (
