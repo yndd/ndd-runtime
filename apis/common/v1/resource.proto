@@ -1,0 +1,83 @@
+syntax = "proto3";
+
+package common.v1;
+
+import "apis/common/v1/policies.proto";
+import "apis/common/v1/condition.proto";
+import "apis/common/v1/health.proto";
+
+option go_package = "github.com/yndd/ndd-runtime/apis/common/v1";
+
+// A Reference to a named object.
+message Reference {
+    // Name of the referenced object.
+    string name = 1;
+}
+
+// A TypedReference refers to an object by Name, Kind, and APIVersion. It is
+// commonly used to reference cluster-scoped objects or objects where the
+// namespace is already known.
+message TypedReference {
+    // APIVersion of the referenced object.
+    string apiVersion = 1;
+    // Kind of the referenced object.
+    string kind = 2;
+    // Name of the referenced object.
+    string name = 3;
+    // UID of the referenced object.
+    string uid = 4;
+}
+
+// A Selector selects an object.
+message Selector {
+    // MatchLabels ensures an object with matching labels is selected.
+    map<string, string> matchLabels = 1;
+    // MatchControllerRef ensures an object with the same controller reference
+	// as the selecting object is selected.
+    bool matchControllerRef = 2;
+}
+
+// A ResourceSpec defines the desired state of a managed resource.
+
+message ResourceSpec {
+    // Lifecycle determines the deletion and deployment lifecycle policies the resource
+	// will follow
+    Lifecycle lifecycle = 1;
+    // TargetReference specifies which target will be used to
+	// perform crud operations for the managed resource
+    Reference targetRef = 2;
+}
+
+// ResourceStatus represents the observed state of a managed resource.
+message ResourceStatus {
+    // the condition status
+    repeated Condition conditions = 1;
+    // the health condition status
+    HealthConditionedStatus health = 2;
+    // the oda info
+    map<string, string> oda = 3;
+    // rootPaths define the rootPaths of the cr, used to monitor the resource status
+    repeated string rootPaths = 4;
+}
+
+message ResourceName {
+    string name = 1;
+}
+
+// A TargetStatus defines the observed status of a target.
+message TargetStatus {
+    // the condition status
+    repeated Condition conditions = 1;
+    // Users of this target configuration.
+    int64 users = 2;
+}
+
+// A TargetUsage is a record that a particular managed resource is using
+// a particular target configuration.
+message TargetUsage {
+    // TargetReference to the target being used.
+    Reference targetRef = 1;
+    // ResourceReference to the managed resource using the target config.
+    TypedReference resourceRef = 2;
+}
+

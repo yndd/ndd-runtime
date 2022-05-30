@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package common.v1;
+
+import "k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto";
+//import "github.com/yndd/ndd-runtime/apis/common/v1/condition.proto";
+import "apis/common/v1/condition.proto";
+
+option go_package = "github.com/yndd/ndd-runtime/apis/common/v1";
+
+message HealthCondition {
+    string resourceName = 1;
+    string healthKind = 2;
+    ConditionStatus status = 3;
+    //github.com.yndd.ndd_runtime.apis.common.v1.ConditionStatus status = 3;
+    k8s.io.apimachinery.pkg.apis.meta.v1.Time lastTransitionTime = 4;
+    ConditionReason reason = 5;
+    //github.com.yndd.ndd_runtime.apis.common.v1.ConditionReason reason = 5;
+    string message = 6;
+}
+
+message HealthConditionedStatus {
+    uint32 percentage = 1;
+    k8s.io.apimachinery.pkg.apis.meta.v1.Time lastTransitionTime = 2;
+    repeated HealthCondition healthConditions = 3;
+}

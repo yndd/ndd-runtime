@@ -35,20 +35,20 @@ const AnnotationKeyExternalName = "ndd.yndd.io/external-name"
 func TypedReferenceTo(o metav1.Object, of schema.GroupVersionKind) *nddv1.TypedReference {
 	v, k := of.ToAPIVersionAndKind()
 	return &nddv1.TypedReference{
-		APIVersion: v,
+		ApiVersion: v,
 		Kind:       k,
 		Name:       o.GetName(),
-		UID:        o.GetUID(),
+		Uid:        string(o.GetUID()),
 	}
 }
 
 // AsOwner converts the supplied object reference to an owner reference.
 func AsOwner(r *nddv1.TypedReference) metav1.OwnerReference {
 	return metav1.OwnerReference{
-		APIVersion: r.APIVersion,
+		APIVersion: r.ApiVersion,
 		Kind:       r.Kind,
 		Name:       r.Name,
-		UID:        r.UID,
+		UID:        types.UID(r.Uid),
 	}
 }
 

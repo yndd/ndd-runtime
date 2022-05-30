@@ -19,36 +19,12 @@ package v1
 import (
 	"sort"
 
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-type HealthCondition struct {
-	// Kind of this condition. At most one of each condition kind may apply to
-	// a resource at any point in time.
-	ResourceName string `json:"resourceName"`
-
-	HealthKind string `json:"healthKind"`
-
-	// Status of this condition; is it currently True, False, or Unknown?
-	Status corev1.ConditionStatus `json:"status"`
-
-	// LastTransitionTime is the last time this condition transitioned from one
-	// status to another.
-	LastTransitionTime metav1.Time `json:"lastTransitionTime"`
-
-	// A Reason for this condition's last transition from one status to another.
-	Reason string `json:"reason,omitempty"`
-
-	// A Message containing details about this condition's last transition from
-	// one status to another, if any.
-	// +optional
-	Message string `json:"message,omitempty"`
-}
-
 // Equal returns true if the condition is identical to the supplied condition,
 // ignoring the LastTransitionTime.
-func (c HealthCondition) Equal(other HealthCondition) bool {
+func (c *HealthCondition) Equal(other *HealthCondition) bool {
 	return c.ResourceName == other.ResourceName &&
 		c.HealthKind == other.HealthKind &&
 		c.Status == other.Status &&
@@ -58,29 +34,17 @@ func (c HealthCondition) Equal(other HealthCondition) bool {
 
 // WithMessage returns a condition by adding the provided message to existing
 // condition.
-func (c HealthCondition) WithMessage(msg string) HealthCondition {
+func (c *HealthCondition) WithMessage(msg string) *HealthCondition {
 	c.Message = msg
 	return c
 }
 
-type HealthConditionedStatus struct {
-	// Status of the health in percentage
-	Percentage uint32 `json:"percentage,omitempty"`
-
-	// LastTransitionTime is the last time this condition transitioned from one
-	// status to another.
-	LastTransitionTime metav1.Time `json:"lastTransitionTime,omitempty"`
-
-	// HealthConditions that determine the health status.
-	// +optional
-	HealthConditions []HealthCondition `json:"healthConditions,omitempty"`
-}
-
 // NewConditionedStatus returns a stat with the supplied conditions set.
-func NewHealthConditionedStatus(p uint32, c ...HealthCondition) *HealthConditionedStatus {
+func NewHealthConditionedStatus(p uint32, c ...*HealthCondition) *HealthConditionedStatus {
+	t := metav1.Now()
 	s := &HealthConditionedStatus{
 		Percentage:         p,
-		LastTransitionTime: metav1.Now(),
+		LastTransitionTime: &t,
 	}
 	s.SetHealthConditions(c...)
 	return s
@@ -88,19 +52,19 @@ func NewHealthConditionedStatus(p uint32, c ...HealthCondition) *HealthCondition
 
 // GetCondition returns the condition for the given ConditionKind if exists,
 // otherwise returns nil
-func (s *HealthConditionedStatus) GetHealthCondition(resourceName, hck string) HealthCondition {
+func (s *HealthConditionedStatus) GetHealthCondition(resourceName, hck string) *HealthCondition {
 	for _, c := range s.HealthConditions {
 		if c.ResourceName == resourceName && c.HealthKind == hck {
 			return c
 		}
 	}
-	return HealthCondition{ResourceName: resourceName, HealthKind: hck, Status: corev1.ConditionUnknown}
+	return &HealthCondition{ResourceName: resourceName, HealthKind: hck, Status: ConditionStatus_ConditionStatus_Unknown}
 }
 
 // SetConditions sets the supplied conditions, replacing any existing conditions
 // of the same kind. This is a no-op if all supplied conditions are identical,
 // ignoring the last transition time, to those already set.
-func (s *HealthConditionedStatus) SetHealthConditions(c ...HealthCondition) {
+func (s *HealthConditionedStatus) SetHealthConditions(c ...*HealthCondition) {
 	for _, new := range c {
 		exists := false
 		for i, existing := range s.HealthConditions {
@@ -137,10 +101,10 @@ func (s *HealthConditionedStatus) Equal(other *HealthConditionedStatus) bool {
 		return false
 	}
 
-	sc := make([]HealthCondition, len(s.HealthConditions))
+	sc := make([]*HealthCondition, len(s.HealthConditions))
 	copy(sc, s.HealthConditions)
 
-	oc := make([]HealthCondition, len(other.HealthConditions))
+	oc := make([]*HealthCondition, len(other.HealthConditions))
 	copy(oc, other.HealthConditions)
 
 	// We should not have more than one condition of each kind.

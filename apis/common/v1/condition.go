@@ -19,83 +19,12 @@ package v1
 import (
 	"sort"
 
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// A ConditionKind represents a condition kind for a resource
-type ConditionKind string
-
-// Condition Kinds.
-const (
-	// handled per resource
-	//ConditionKindLeafRef ConditionKind = "LeafrefValidationSuccess"
-	// handled per resource
-	//ConditionKindInternalLeafRef ConditionKind = "InternalLeafrefValidationSuccess"
-	// handled per target per resource
-	//ConditionKindExternalLeafRef ConditionKind = "ExternalLeafrefValidationSuccess"
-	// handled per resource
-	ConditionKindRootPath ConditionKind = "RootPathValidationSuccess"
-	// handled per resource
-	ConditionKindTarget ConditionKind = "TargetFound"
-	// handled per target per resource
-	ConditionKindSynced ConditionKind = "Synced"
-	// handled per target per resource
-	ConditionKindReady ConditionKind = "Ready"
-)
-
-// A ConditionReason represents the reason a resource is in a condition.
-type ConditionReason string
-
-// Reasons a resource validation is or is not ok
-// applicable to leafref validation and target validation
-const (
-	ConditionReasonSuccess ConditionReason = "Success"
-	ConditionReasonFailed  ConditionReason = "Failed"
-)
-
-// Reasons a resource is or is not ready
-const (
-	ConditionReasonUnknown     ConditionReason = "Unknown"
-	ConditionReasonCreating    ConditionReason = "Creating"
-	ConditionReasonDeleting    ConditionReason = "Deleting"
-	ConditionReasonUpdating    ConditionReason = "Updating"
-	ConditionReasonUnavailable ConditionReason = "UnAvailable"
-	ConditionReasonAvailable   ConditionReason = "Available"
-	ConditionReasonPending     ConditionReason = "Pending"
-)
-
-// Reasons a resource is or is not synced.
-const (
-	ConditionReasonReconcileSuccess ConditionReason = "ReconcileSuccess"
-	ConditionReasonReconcileFailure ConditionReason = "ReconcileFailure"
-)
-
-// A Condition that may apply to a resource
-type Condition struct {
-	// Type of this condition. At most one of each condition type may apply to
-	// a resource at any point in time.
-	Kind ConditionKind `json:"kind"`
-
-	// Status of this condition; is it currently True, False, or Unknown?
-	Status corev1.ConditionStatus `json:"status"`
-
-	// LastTransitionTime is the last time this condition transitioned from one
-	// status to another.
-	LastTransitionTime metav1.Time `json:"lastTransitionTime"`
-
-	// A Reason for this condition's last transition from one status to another.
-	Reason ConditionReason `json:"reason"`
-
-	// A Message containing details about this condition's last transition from
-	// one status to another, if any.
-	// +optional
-	Message string `json:"message,omitempty"`
-}
-
 // Equal returns true if the condition is identical to the supplied condition,
 // ignoring the LastTransitionTime.
-func (c Condition) Equal(other Condition) bool {
+func (c *Condition) Equal(other *Condition) bool {
 	return c.Kind == other.Kind &&
 		c.Status == other.Status &&
 		c.Reason == other.Reason &&
@@ -104,21 +33,13 @@ func (c Condition) Equal(other Condition) bool {
 
 // WithMessage returns a condition by adding the provided message to existing
 // condition.
-func (c Condition) WithMessage(msg string) Condition {
+func (c *Condition) WithMessage(msg string) *Condition {
 	c.Message = msg
 	return c
 }
 
-// A ConditionedStatus reflects the observed status of a resource. Only
-// one condition of each kind may exist.
-type ConditionedStatus struct {
-	// Conditions of the resource.
-	// +optional
-	Conditions []Condition `json:"conditions,omitempty"`
-}
-
 // NewConditionedStatus returns a stat with the supplied conditions set.
-func NewConditionedStatus(c ...Condition) *ConditionedStatus {
+func NewConditionedStatus(c ...*Condition) *ConditionedStatus {
 	s := &ConditionedStatus{}
 	s.SetConditions(c...)
 	return s
@@ -126,19 +47,19 @@ func NewConditionedStatus(c ...Condition) *ConditionedStatus {
 
 // GetCondition returns the condition for the given ConditionKind if exists,
 // otherwise returns nil
-func (s *ConditionedStatus) GetCondition(ck ConditionKind) Condition {
+func (s *ConditionedStatus) GetACondition(ck ConditionKind) Condition {
 	for _, c := range s.Conditions {
 		if c.Kind == ck {
-			return c
+			return *c
 		}
 	}
-	return Condition{Kind: ck, Status: corev1.ConditionUnknown}
+	return Condition{Kind: ck, Status: ConditionStatus_ConditionStatus_Unknown}
 }
 
 // SetConditions sets the supplied conditions, replacing any existing conditions
 // of the same kind. This is a no-op if all supplied conditions are identical,
 // ignoring the last transition time, to those already set.
-func (s *ConditionedStatus) SetConditions(c ...Condition) {
+func (s *ConditionedStatus) SetConditions(c ...*Condition) {
 	for _, new := range c {
 		exists := false
 		for i, existing := range s.Conditions {
@@ -171,10 +92,10 @@ func (s *ConditionedStatus) Equal(other *ConditionedStatus) bool {
 		return false
 	}
 
-	sc := make([]Condition, len(s.Conditions))
+	sc := make([]*Condition, len(s.Conditions))
 	copy(sc, s.Conditions)
 
-	oc := make([]Condition, len(other.Conditions))
+	oc := make([]*Condition, len(other.Conditions))
 	copy(oc, other.Conditions)
 
 	// We should not have more than one condition of each kind.
@@ -193,55 +114,60 @@ func (s *ConditionedStatus) Equal(other *ConditionedStatus) bool {
 // Unknown returns a condition that indicates the resource is in an
 // unknown status.
 func Unknown() Condition {
+	t := metav1.Now()
 	return Condition{
-		Kind:               ConditionKindReady,
-		Status:             corev1.ConditionFalse,
-		LastTransitionTime: metav1.Now(),
-		Reason:             ConditionReasonUnknown,
+		Kind:               ConditionKind_ConditionKind_Ready,
+		Status:             ConditionStatus_ConditionStatus_False,
+		LastTransitionTime: &t,
+		Reason:             ConditionReason_ConditionReason_Unknown,
 	}
 }
 
 // Creating returns a condition that indicates the resource is currently
 // being created.
 func Creating() Condition {
+	t := metav1.Now()
 	return Condition{
-		Kind:               ConditionKindReady,
-		Status:             corev1.ConditionFalse,
-		LastTransitionTime: metav1.Now(),
-		Reason:             ConditionReasonCreating,
+		Kind:               ConditionKind_ConditionKind_Ready,
+		Status:             ConditionStatus_ConditionStatus_False,
+		LastTransitionTime: &t,
+		Reason:             ConditionReason_ConditionReason_Creating,
 	}
 }
 
 // Updating returns a condition that indicates the resource is currently
 // being updated.
 func Updating() Condition {
+	t := metav1.Now()
 	return Condition{
-		Kind:               ConditionKindReady,
-		Status:             corev1.ConditionFalse,
-		LastTransitionTime: metav1.Now(),
-		Reason:             ConditionReasonUpdating,
+		Kind:               ConditionKind_ConditionKind_Ready,
+		Status:             ConditionStatus_ConditionStatus_False,
+		LastTransitionTime: &t,
+		Reason:             ConditionReason_ConditionReason_Updating,
 	}
 }
 
 // Deleting returns a condition that indicates the resource is currently
 // being deleted.
 func Deleting() Condition {
+	t := metav1.Now()
 	return Condition{
-		Kind:               ConditionKindReady,
-		Status:             corev1.ConditionFalse,
-		LastTransitionTime: metav1.Now(),
-		Reason:             ConditionReasonDeleting,
+		Kind:               ConditionKind_ConditionKind_Ready,
+		Status:             ConditionStatus_ConditionStatus_False,
+		LastTransitionTime: &t,
+		Reason:             ConditionReason_ConditionReason_Deleting,
 	}
 }
 
 // Available returns a condition that indicates the resource is
 // currently observed to be available for use.
 func Available() Condition {
+	t := metav1.Now()
 	return Condition{
-		Kind:               ConditionKindReady,
-		Status:             corev1.ConditionTrue,
-		LastTransitionTime: metav1.Now(),
-		Reason:             ConditionReasonAvailable,
+		Kind:               ConditionKind_ConditionKind_Ready,
+		Status:             ConditionStatus_ConditionStatus_True,
+		LastTransitionTime: &t,
+		Reason:             ConditionReason_ConditionReason_Available,
 	}
 }
 
@@ -250,22 +176,24 @@ func Available() Condition {
 // expects the resource to be available but knows it is not, for example
 // because its API reports it is unhealthy.
 func Unavailable() Condition {
+	t := metav1.Now()
 	return Condition{
-		Kind:               ConditionKindReady,
-		Status:             corev1.ConditionFalse,
-		LastTransitionTime: metav1.Now(),
-		Reason:             ConditionReasonUnavailable,
+		Kind:               ConditionKind_ConditionKind_Ready,
+		Status:             ConditionStatus_ConditionStatus_False,
+		LastTransitionTime: &t,
+		Reason:             ConditionReason_ConditionReason_Unavailable,
 	}
 }
 
 // Failed returns a condition that indicates the resource
 // failed to get instantiated.
 func Failed(msg string) Condition {
+	t := metav1.Now()
 	return Condition{
-		Kind:               ConditionKindReady,
-		Status:             corev1.ConditionFalse,
-		LastTransitionTime: metav1.Now(),
-		Reason:             ConditionReasonFailed,
+		Kind:               ConditionKind_ConditionKind_Ready,
+		Status:             ConditionStatus_ConditionStatus_False,
+		LastTransitionTime: &t,
+		Reason:             ConditionReason_ConditionReason_Failed,
 		Message:            msg,
 	}
 }
@@ -273,22 +201,24 @@ func Failed(msg string) Condition {
 // Pending returns a condition that indicates the resource is not
 // currently available for use and is still being processed
 func Pending() Condition {
+	t := metav1.Now()
 	return Condition{
-		Kind:               ConditionKindReady,
-		Status:             corev1.ConditionFalse,
-		LastTransitionTime: metav1.Now(),
-		Reason:             ConditionReasonPending,
+		Kind:               ConditionKind_ConditionKind_Ready,
+		Status:             ConditionStatus_ConditionStatus_False,
+		LastTransitionTime: &t,
+		Reason:             ConditionReason_ConditionReason_Pending,
 	}
 }
 
 // ReconcileSuccess returns a condition indicating that ndd successfully
 // completed the most recent reconciliation of the resource.
 func ReconcileSuccess() Condition {
+	t := metav1.Now()
 	return Condition{
-		Kind:               ConditionKindSynced,
-		Status:             corev1.ConditionTrue,
-		LastTransitionTime: metav1.Now(),
-		Reason:             ConditionReasonReconcileSuccess,
+		Kind:               ConditionKind_ConditionKind_Synced,
+		Status:             ConditionStatus_ConditionStatus_True,
+		LastTransitionTime: &t,
+		Reason:             ConditionReason_ConditionReason_ReconcileSuccess,
 	}
 }
 
@@ -297,66 +227,71 @@ func ReconcileSuccess() Condition {
 // unable to update the resource to reflect its desired state, or that
 // ndd was unable to determine the current actual state of the resource.
 func ReconcileError(err error) Condition {
+	t := metav1.Now()
 	return Condition{
-		Kind:               ConditionKindSynced,
-		Status:             corev1.ConditionFalse,
-		LastTransitionTime: metav1.Now(),
-		Reason:             ConditionReasonReconcileFailure,
-		Message:            err.Error(),
+		Kind:               ConditionKind_ConditionKind_Synced,
+		Status:             ConditionStatus_ConditionStatus_False,
+		LastTransitionTime: &t,
+		Reason:             ConditionReason_ConditionReason_ReconcileFailed,
 	}
 }
 
 // TargetFound returns a condition that indicates the resource has
 // target(s) available for use.
 func TargetFound() Condition {
+	t := metav1.Now()
 	return Condition{
-		Kind:               ConditionKindTarget,
-		Status:             corev1.ConditionTrue,
-		LastTransitionTime: metav1.Now(),
-		Reason:             ConditionReasonSuccess,
+		Kind:               ConditionKind_ConditionKind_Target,
+		Status:             ConditionStatus_ConditionStatus_True,
+		LastTransitionTime: &t,
+		Reason:             ConditionReason_ConditionReason_Success,
 	}
 }
 
 // TargetNotFound returns a condition that indicates the resource has no
 // target(s) available for use.
 func TargetNotFound() Condition {
+	t := metav1.Now()
 	return Condition{
-		Kind:               ConditionKindTarget,
-		Status:             corev1.ConditionFalse,
-		LastTransitionTime: metav1.Now(),
-		Reason:             ConditionReasonFailed,
+		Kind:               ConditionKind_ConditionKind_Target,
+		Status:             ConditionStatus_ConditionStatus_False,
+		LastTransitionTime: &t,
+		Reason:             ConditionReason_ConditionReason_Failed,
 	}
 }
 
 // LeafRefValidationSuccess returns a condition that indicates
 // the resource leafreference(s) are found or no leafrefs exist
 func RootPathValidationSuccess() Condition {
+	t := metav1.Now()
 	return Condition{
-		Kind:               ConditionKindRootPath,
-		Status:             corev1.ConditionTrue,
-		LastTransitionTime: metav1.Now(),
-		Reason:             ConditionReasonSuccess,
+		Kind:               ConditionKind_ConditionKind_RootPath,
+		Status:             ConditionStatus_ConditionStatus_True,
+		LastTransitionTime: &t,
+		Reason:             ConditionReason_ConditionReason_Success,
 	}
 }
 
 // LeafRefValidationFailure returns a condition that indicates
 // the resource leafreference(s) are missing
 func RootPathValidationFailure() Condition {
+	t := metav1.Now()
 	return Condition{
-		Kind:               ConditionKindRootPath,
-		Status:             corev1.ConditionFalse,
-		LastTransitionTime: metav1.Now(),
-		Reason:             ConditionReasonFailed,
+		Kind:               ConditionKind_ConditionKind_RootPath,
+		Status:             ConditionStatus_ConditionStatus_False,
+		LastTransitionTime: &t,
+		Reason:             ConditionReason_ConditionReason_Failed,
 	}
 }
 
 // LeafRefValidationUnknown returns a condition that indicates
 // the internal leafref validation is unknown
 func RootPathValidationUnknown() Condition {
+	t := metav1.Now()
 	return Condition{
-		Kind:               ConditionKindRootPath,
-		Status:             corev1.ConditionFalse,
-		LastTransitionTime: metav1.Now(),
-		Reason:             ConditionReasonUnknown,
+		Kind:               ConditionKind_ConditionKind_RootPath,
+		Status:             ConditionStatus_ConditionStatus_False,
+		LastTransitionTime: &t,
+		Reason:             ConditionReason_ConditionReason_Unknown,
 	}
 }
