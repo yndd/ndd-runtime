@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package common.v1;
+
+option go_package = "github.com/yndd/ndd-runtime/apis/common/v1";
+
+message OdaInfo {
+    map<string, string> oda = 1;
+}
+
+enum OdaKind {
+    OdaKind_Unknown = 0;
+    OdaKind_Organization = 1;
+    OdaKind_Deployment = 2;
+    OdaKind_AvailabilityZone = 3;
+}

@@ -297,7 +297,7 @@ func (r *Reconciler) Reconcile(_ context.Context, req reconcile.Request) (reconc
 	// If managed resource has a deletion timestamp and and a deletion policy of
 	// Orphan, we do not need to observe the external resource before attempting
 	// to remove finalizer.
-	if meta.WasDeleted(managed) && managed.GetDeletionPolicy() == nddv1.DeletionOrphan {
+	if meta.WasDeleted(managed) && managed.GetDeletionPolicy() == nddv1.DeletionPolicy_DeletionPolicy_Orphan {
 		log = log.WithValues("deletion-timestamp", managed.GetDeletionTimestamp())
 		managed.SetConditions(nddv1.Deleting())
 

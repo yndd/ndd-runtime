@@ -1,0 +1,52 @@
+syntax = "proto3";
+
+package common.v1;
+
+import "k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto";
+
+option go_package = "github.com/yndd/ndd-runtime/apis/common/v1";
+
+message Condition {
+    ConditionKind kind = 1;
+    ConditionStatus status = 2;
+    k8s.io.apimachinery.pkg.apis.meta.v1.Time lastTransitionTime = 3;
+    //optional github.com.kubernetes.apimachinery.pkg.apis.meta.v1.Time lastTransitionTime = 3;
+    ConditionReason reason = 4;
+    string message = 5;
+}
+
+message ConditionedStatus {
+    repeated Condition conditions = 1;
+}
+
+enum ConditionStatus {
+    ConditionStatus_Unknown = 0;
+    ConditionStatus_False = 1;
+    ConditionStatus_True = 2;
+}
+
+enum ConditionKind {
+    ConditionKind_Unspecified = 0;
+    ConditionKind_RootPath = 1;
+    ConditionKind_Target = 2;
+    ConditionKind_Synced = 3;
+    ConditionKind_Ready = 4;
+}
+
+enum ConditionReason {
+    ConditionReason_Unspecified = 0;
+    // Reasons a resource validation failed
+    ConditionReason_Success = 1;
+    ConditionReason_Failed = 2;
+    // Reasons a resource is or is not ready
+    ConditionReason_Unknown = 3;
+    ConditionReason_Creating = 4;
+    ConditionReason_Deleting = 5;
+    ConditionReason_Updating = 6;
+    ConditionReason_Unavailable = 7;
+    ConditionReason_Available = 8;
+    ConditionReason_Pending = 9;
+    // Reasons a resource is or is not synced.
+    ConditionReason_ReconcileSuccess = 10;
+    ConditionReason_ReconcileFailed = 11;
+}

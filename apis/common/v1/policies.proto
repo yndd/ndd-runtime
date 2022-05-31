@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package common.v1;
+
+option go_package = "github.com/yndd/ndd-runtime/apis/common/v1";
+
+message Lifecycle {
+    DeploymentPolicy deploymentPolicy = 1;
+	DeletionPolicy deletionPolicy = 2;
+}
+
+enum DeploymentPolicy {
+    DeploymentPolicy_Active = 0;
+    DeploymentPolicy_Planned = 1;
+}
+
+enum DeletionPolicy {
+    DeletionPolicy_Orphan = 0;
+    DeletionPolicy_Delete = 1;
+}

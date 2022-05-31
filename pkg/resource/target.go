@@ -80,7 +80,7 @@ func (u *TargetUsageTracker) Track(ctx context.Context, mg Managed) error {
 	pcu.SetOwnerReferences([]metav1.OwnerReference{meta.AsController(meta.TypedReferenceTo(mg, gvk))})
 	pcu.SetTargetReference(nddv1.Reference{Name: ref.Name})
 	pcu.SetResourceReference(nddv1.TypedReference{
-		APIVersion: gvk.GroupVersion().String(),
+		ApiVersion: gvk.GroupVersion().String(),
 		Kind:       gvk.Kind,
 		Name:       mg.GetName(),
 	})
@@ -88,7 +88,7 @@ func (u *TargetUsageTracker) Track(ctx context.Context, mg Managed) error {
 	err := u.c.Apply(ctx, pcu,
 		MustBeControllableBy(mg.GetUID()),
 		AllowUpdateIf(func(current, _ runtime.Object) bool {
-			return current.(TargetUsage).GetTargetReference() != pcu.GetTargetReference()
+			return current.(TargetUsage).GetTargetReference().Name != pcu.GetTargetReference().Name
 		}),
 	)
 	return errors.Wrap(Ignore(IsNotAllowed, err), errApplyTargetUsage)
