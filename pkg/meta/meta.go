@@ -210,12 +210,6 @@ func SetExternalName(o metav1.Object, name string) {
 	AddAnnotations(o, map[string]string{AnnotationKeyExternalName: name})
 }
 
-const (
-	SystemCachePrefix = "system"
-	ConfigCachePrefix = "config"
-	TargetCachePrefix = "target"
-)
-
 type NamespacedName string
 
 // NamespacedNameOf returns the referenced object's namespaced name.
