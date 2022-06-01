@@ -21,6 +21,7 @@ import (
 	"github.com/yndd/ndd-runtime/pkg/logging"
 	"github.com/yndd/registrator/registrator"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
+	"github.com/yndd/ndd-runtime/pkg/targetchannel"
 )
 
 type NddControllerOptions struct {
@@ -35,4 +36,5 @@ type NddControllerOptions struct {
 	ServiceDiscoveryNamespace string
 	Copts                     controller.Options
 	Registrator               registrator.Registrator
+	TargetCh                  chan targetchannel.TargetMsg
 }
