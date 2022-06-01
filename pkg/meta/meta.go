@@ -17,6 +17,8 @@ limitations under the License.
 package meta
 
 import (
+	"strings"
+
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -79,6 +81,15 @@ func HaveSameController(a, b metav1.Object) bool {
 // NamespacedNameOf returns the referenced object's namespaced name.
 func NamespacedNameOf(r *corev1.ObjectReference) types.NamespacedName {
 	return types.NamespacedName{Namespace: r.Namespace, Name: r.Name}
+}
+
+// GetNameAndNamespace returns namespace and name from namespaced string
+func GetNameAndNamespace(namespacedName string) (string, string) {
+	split := strings.Split(namespacedName, "/")
+	if len(split) == 1 {
+		return "default", split[0]
+	}
+	return split[1], split[0]
 }
 
 // AddOwnerReference to the supplied object' metadata. Any existing owner with

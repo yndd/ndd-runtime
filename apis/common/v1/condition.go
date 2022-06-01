@@ -29,13 +29,7 @@ type ConditionKind string
 // Condition Kinds.
 const (
 	// handled per resource
-	//ConditionKindLeafRef ConditionKind = "LeafrefValidationSuccess"
-	// handled per resource
-	//ConditionKindInternalLeafRef ConditionKind = "InternalLeafrefValidationSuccess"
-	// handled per target per resource
-	//ConditionKindExternalLeafRef ConditionKind = "ExternalLeafrefValidationSuccess"
-	// handled per resource
-	ConditionKindRootPath ConditionKind = "RootPathValidationSuccess"
+	ConditionKindRootPath ConditionKind = "RootPath"
 	// handled per resource
 	ConditionKindTarget ConditionKind = "TargetFound"
 	// handled per target per resource
