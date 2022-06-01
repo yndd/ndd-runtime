@@ -78,20 +78,6 @@ func HaveSameController(a, b metav1.Object) bool {
 	return ac.UID == bc.UID
 }
 
-// NamespacedNameOf returns the referenced object's namespaced name.
-func NamespacedNameOf(r *corev1.ObjectReference) types.NamespacedName {
-	return types.NamespacedName{Namespace: r.Namespace, Name: r.Name}
-}
-
-// GetNameAndNamespace returns namespace and name from namespaced string
-func GetNameAndNamespace(namespacedName string) (string, string) {
-	split := strings.Split(namespacedName, "/")
-	if len(split) == 1 {
-		return "default", split[0]
-	}
-	return split[1], split[0]
-}
-
 // AddOwnerReference to the supplied object' metadata. Any existing owner with
 // the same UID as the supplied reference will be replaced.
 func AddOwnerReference(o metav1.Object, r metav1.OwnerReference) {
@@ -222,4 +208,54 @@ func GetExternalName(o metav1.Object) string {
 // SetExternalName sets the external name annotation of the resource.
 func SetExternalName(o metav1.Object, name string) {
 	AddAnnotations(o, map[string]string{AnnotationKeyExternalName: name})
+}
+
+const (
+	SystemCachePrefix = "system"
+	ConfigCachePrefix = "config"
+	TargetCachePrefix = "target"
+)
+
+type NamespacedName string
+
+// NamespacedNameOf returns the referenced object's namespaced name.
+func NamespacedNameOf(r *corev1.ObjectReference) types.NamespacedName {
+	return types.NamespacedName{Namespace: r.Namespace, Name: r.Name}
+}
+
+// GetNameAndNamespace returns namespace and name from namespaced string
+func (t NamespacedName) GetNameAndNamespace() (string, string) {
+	split := strings.SplitN(string(t), "/", 2)
+	if len(split) == 1 {
+		return "default", split[0]
+	}
+	return split[1], split[0]
+}
+
+// GetNameSpace returns the namespace from the namespacedName
+func (t NamespacedName) GetNameSpace() string {
+	split := strings.SplitN(string(t), "/", 2)
+	if len(split) != 2 {
+		return ""
+	}
+	return split[0]
+}
+
+// GetName returns the name from the namespacedName
+func (t NamespacedName) GetName() string {
+	split := strings.SplitN(string(t), "/", 2)
+	if len(split) != 2 {
+		return ""
+	}
+	return split[1]
+}
+
+// GetPrefixNamespacedName return a cacheNsName from prefix and namespacedName
+func (t NamespacedName) GetPrefixNamespacedName(prefix string) string {
+	return strings.Join([]string{prefix, string(t)}, "/")
+}
+
+// GetNamespacedName returns a namespacedName from namespace and name
+func GetNamespacedName(namespace, name string) string {
+	return strings.Join([]string{namespace, name}, "/")
 }
