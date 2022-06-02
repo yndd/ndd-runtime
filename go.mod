@@ -5,8 +5,7 @@ go 1.16
 require (
 	github.com/go-logr/logr v1.2.0
 	github.com/openconfig/gnmi v0.0.0-20210914185457-51254b657b7d
-	github.com/openconfig/goyang v1.0.0
-	github.com/openconfig/ygot v0.22.1
+	github.com/openconfig/ygot v0.22.1 // indirect
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/afero v1.6.0
 	github.com/yndd/nddp-system v0.1.6
