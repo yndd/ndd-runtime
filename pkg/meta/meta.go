@@ -221,7 +221,7 @@ func NamespacedNameOf(r *corev1.ObjectReference) types.NamespacedName {
 func (t NamespacedName) GetNameAndNamespace() (string, string) {
 	split := strings.SplitN(string(t), "/", 2)
 	if len(split) == 1 {
-		return "default", split[0]
+		return "", split[0]
 	}
 	return split[1], split[0]
 }
