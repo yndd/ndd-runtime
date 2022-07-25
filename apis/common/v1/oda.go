@@ -83,3 +83,7 @@ func (x *OdaInfo) SetDeployment(s string) {
 func (x *OdaInfo) SetAvailabilityZone(s string) {
 	x.Oda[OdaKindAvailabiityZone.String()] = s
 }
+
+func (x *OdaInfo) SetResourceName(s string) {
+	x.Oda[OdaKindResourceName.String()] = s
+}
