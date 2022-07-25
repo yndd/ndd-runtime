@@ -23,6 +23,7 @@ const (
 	OdaKindDeployment      OdaKind = "deployment"
 	OdaKindAvailabiityZone OdaKind = "availabilityZone"
 	OdaKindUnknown         OdaKind = "unknown"
+	OdaKindResourceName    OdaKind = "resourceName"
 )
 
 func (s OdaKind) String() string {
@@ -33,6 +34,8 @@ func (s OdaKind) String() string {
 		return "deployment"
 	case OdaKindAvailabiityZone:
 		return "availabilityZone"
+	case OdaKindResourceName:
+		return "resourceName"
 	case OdaKindUnknown:
 		return "unknown"
 	}
