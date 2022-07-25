@@ -72,18 +72,29 @@ func (x *OdaInfo) GetAvailabilityZone() string {
 }
 
 func (x *OdaInfo) SetOrganization(s string) {
+	if x.Oda == nil {
+		x.Oda = map[string]string{}
+	}
 	x.Oda[OdaKindOrganization.String()] = s
 }
 
 func (x *OdaInfo) SetDeployment(s string) {
+	if x.Oda == nil {
+		x.Oda = map[string]string{}
+	}
 	x.Oda[OdaKindDeployment.String()] = s
-
 }
 
 func (x *OdaInfo) SetAvailabilityZone(s string) {
+	if x.Oda == nil {
+		x.Oda = map[string]string{}
+	}
 	x.Oda[OdaKindAvailabiityZone.String()] = s
 }
 
 func (x *OdaInfo) SetResourceName(s string) {
+	if x.Oda == nil {
+		x.Oda = map[string]string{}
+	}
 	x.Oda[OdaKindResourceName.String()] = s
 }
